@@ -1,5 +1,5 @@
 # transversals
-Esquema mínim de carpetes pels projectes transversals
+Esquema mínim de carpetes pels projectes transversal
 
 És obligatori seguir aquesta estructura tot i que la podeu ampliar.
 
