@@ -30,8 +30,8 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/bentotickets-backend:${{ github.sha }}
-            ${{ secrets.DOCKER_USERNAME }}/bentotickets-backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/queuely-backend:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/queuely-backend:latest
 
       - name: Build and push Realtime (Socket.IO)
         uses: docker/build-push-action@v5
@@ -39,8 +39,8 @@ jobs:
           context: ./realtime
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/bentotickets-realtime:${{ github.sha }}
-            ${{ secrets.DOCKER_USERNAME }}/bentotickets-realtime:latest
+            ${{ secrets.DOCKER_USERNAME }}/queuely-realtime:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/queuely-realtime:latest
 
       - name: Build and push Frontend (Nuxt)
         uses: docker/build-push-action@v5
@@ -48,8 +48,8 @@ jobs:
           context: ./frontend
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/bentotickets-frontend:${{ github.sha }}
-            ${{ secrets.DOCKER_USERNAME }}/bentotickets-frontend:latest
+            ${{ secrets.DOCKER_USERNAME }}/queuely-frontend:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/queuely-frontend:latest
 
   deploy:
     name: Deploy to Server
@@ -68,7 +68,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
-            cd /opt/bentotickets
+            cd /opt/queuely
             git pull origin main
             docker-compose pull
             docker-compose up -d --build

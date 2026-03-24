@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
         // Usuario de prueba
         User::factory()->create([
             'name' => 'Izan de la Cruz',
-            'email' => 'test@bentotickets.com',
+            'email' => 'test@queuely.com',
             'password' => bcrypt('password'),
             'email_verified_at' => now(),
         ]);

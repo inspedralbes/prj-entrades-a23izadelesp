@@ -1,7 +1,7 @@
 {
-  "name": "bentotickets-realtime",
+  "name": "queuely-realtime",
   "version": "1.0.0",
-  "description": "BentoTickets Socket.IO Realtime Server",
+  "description": "QueueLy Socket.IO Realtime Server",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

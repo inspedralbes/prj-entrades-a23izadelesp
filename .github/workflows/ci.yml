@@ -15,7 +15,7 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: bentotickets_test
+          POSTGRES_DB: queuely_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
@@ -65,7 +65,7 @@ jobs:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
-          DB_DATABASE: bentotickets_test
+          DB_DATABASE: queuely_test
           DB_USERNAME: postgres
           DB_PASSWORD: postgres
           REDIS_HOST: 127.0.0.1
@@ -78,7 +78,7 @@ jobs:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
-          DB_DATABASE: bentotickets_test
+          DB_DATABASE: queuely_test
           DB_USERNAME: postgres
           DB_PASSWORD: postgres
           REDIS_HOST: 127.0.0.1

@@ -13,7 +13,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - bentotickets
+      - queuely
 
   laravel:
     build:
@@ -27,12 +27,12 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - bentotickets
+      - queuely
     environment:
       - DB_CONNECTION=pgsql
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_DATABASE=bentotickets
+      - DB_DATABASE=queuely
       - DB_USERNAME=bentouser
       - DB_PASSWORD=bentopass
       - REDIS_HOST=redis
@@ -53,7 +53,7 @@ services:
     depends_on:
       - redis
     networks:
-      - bentotickets
+      - queuely
     environment:
       - SOCKET_PORT=3001
       - REDIS_URL=redis://redis:6379
@@ -63,15 +63,15 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=bentotickets
+      - POSTGRES_DB=queuely
       - POSTGRES_USER=bentouser
       - POSTGRES_PASSWORD=bentopass
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - bentotickets
+      - queuely
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bentouser -d bentotickets"]
+      test: ["CMD-SHELL", "pg_isready -U bentouser -d queuely"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -83,7 +83,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - bentotickets
+      - queuely
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -96,12 +96,12 @@ services:
       - "1025:1025"
       - "8025:8025"
     networks:
-      - bentotickets
+      - queuely
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
-  bentotickets:
+  queuely:
     driver: bridge
