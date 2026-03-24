@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./backend:/var/www/backend
+    depends_on:
+      - laravel
+    networks:
+      - bentotickets
+
+  laravel:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/var/www/backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - bentotickets
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=bentotickets
+      - DB_USERNAME=bentouser
+      - DB_PASSWORD=bentopass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE_CONNECTION=redis
+
+  node-socket:
+    build:
+      context: ./realtime
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./realtime:/app
+    depends_on:
+      - redis
+    networks:
+      - bentotickets
+    environment:
+      - SOCKET_PORT=3001
+      - REDIS_URL=redis://redis:6379
+
+  postgres:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=bentotickets
+      - POSTGRES_USER=bentouser
+      - POSTGRES_PASSWORD=bentopass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bentotickets
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bentouser -d bentotickets"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - bentotickets
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  bentotickets:
+    driver: bridge
