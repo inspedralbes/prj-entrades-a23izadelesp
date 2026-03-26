@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\GoogleAuthController;
+use App\Http\Controllers\Api\SessionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -33,3 +35,11 @@ Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
 
 // Health check
 Route::get('/ping', fn () => response()->json(['status' => 'ok']));
+
+// Events
+Route::get('/events', [EventController::class, 'index']);
+Route::get('/events/{event}', [EventController::class, 'show']);
+
+// Sessions
+Route::get('/sessions/{session}', [SessionController::class, 'show']);
+Route::get('/sessions/{session}/seats', [SessionController::class, 'seats']);

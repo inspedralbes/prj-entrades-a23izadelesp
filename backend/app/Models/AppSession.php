@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AppSession extends Model
 {
+    use HasFactory;
     protected $table = 'app_sessions';
 
     protected $fillable = ['event_id', 'date', 'time', 'price', 'venue_config'];
