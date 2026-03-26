@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'soft_lock_ttl' => env('SOFT_LOCK_TTL', 300),
+
 ];

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\GoogleAuthController;
+use App\Http\Controllers\Api\SeatController;
 use App\Http\Controllers\Api\SessionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -43,3 +44,11 @@ Route::get('/events/{event}', [EventController::class, 'show']);
 // Sessions
 Route::get('/sessions/{session}', [SessionController::class, 'show']);
 Route::get('/sessions/{session}/seats', [SessionController::class, 'seats']);
+
+// Seat Lock (cine - grid)
+Route::post('/sessions/{session}/seats/lock', [SeatController::class, 'lockSeat']);
+Route::delete('/sessions/{session}/seats/unlock', [SeatController::class, 'unlockSeat']);
+
+// Zone Lock (concierto - zones)
+Route::post('/sessions/{session}/zones/lock', [SeatController::class, 'lockZone']);
+Route::delete('/sessions/{session}/zones/unlock', [SeatController::class, 'unlockZone']);
