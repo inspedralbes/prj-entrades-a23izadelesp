@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\GoogleAuthController;
+use App\Http\Controllers\Api\QueueController;
 use App\Http\Controllers\Api\SeatController;
 use App\Http\Controllers\Api\SessionController;
 use Illuminate\Http\Request;
@@ -52,3 +53,8 @@ Route::delete('/sessions/{session}/seats/unlock', [SeatController::class, 'unloc
 // Zone Lock (concierto - zones)
 Route::post('/sessions/{session}/zones/lock', [SeatController::class, 'lockZone']);
 Route::delete('/sessions/{session}/zones/unlock', [SeatController::class, 'unlockZone']);
+
+// Queue (sala de espera)
+Route::post('/sessions/{session}/queue/join', [QueueController::class, 'join']);
+Route::get('/sessions/{session}/queue/position', [QueueController::class, 'position']);
+Route::post('/sessions/{session}/queue/admit', [QueueController::class, 'admit']);
