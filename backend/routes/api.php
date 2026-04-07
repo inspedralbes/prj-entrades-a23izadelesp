@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\GoogleAuthController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\QueueController;
 use App\Http\Controllers\Api\SeatController;
 use App\Http\Controllers\Api\SessionController;
@@ -58,3 +59,9 @@ Route::delete('/sessions/{session}/zones/unlock', [SeatController::class, 'unloc
 Route::post('/sessions/{session}/queue/join', [QueueController::class, 'join']);
 Route::get('/sessions/{session}/queue/position', [QueueController::class, 'position']);
 Route::post('/sessions/{session}/queue/admit', [QueueController::class, 'admit']);
+
+// Profile (historial de compras)
+Route::middleware('auth:sanctum')->prefix('profile')->group(function () {
+    Route::get('/tickets', [ProfileController::class, 'tickets']);
+    Route::get('/tickets/{booking}', [ProfileController::class, 'ticket']);
+});
