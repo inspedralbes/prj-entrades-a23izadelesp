@@ -25,8 +25,8 @@ class QueueManager {
           const userData = JSON.parse(position);
           const usersToAdmit = await this.redis.lrange(queueKey, 0, this.admissionBatchSize - 1);
           
-          for (const user of usersToAdmit) {
-            const user = JSON.parse(user);
+          for (const userRaw of usersToAdmit) {
+            const user = JSON.parse(userRaw);
             if (user.socket_id) {
               this.io.to(user.socket_id).emit('queue:admitted', {
                 session_id: sessionId
