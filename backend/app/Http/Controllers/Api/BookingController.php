@@ -8,6 +8,7 @@ use App\Models\OccupiedSeat;
 use App\Models\OccupiedZone;
 use App\Models\Ticket;
 use App\Jobs\ProcessPayment;
+use App\Services\QrService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redis;
@@ -101,6 +102,23 @@ class BookingController extends Controller
                 'status' => $booking->status,
                 'total' => $booking->total,
                 'tickets' => $booking->tickets,
+            ]
+        ]);
+    }
+
+    public function qr(Booking $booking, QrService $qrService)
+    {
+        $booking->load(['session.event', 'tickets.seat', 'tickets.zone']);
+        
+        $qrImage = $qrService->generate($booking);
+        
+        return response()->json([
+            'data' => [
+                'booking_id' => $booking->id,
+                'qr' => $qrImage,
+                'event' => $booking->session->event->title,
+                'session' => $booking->session->date . ' ' . $booking->session->time,
+                'total' => $booking->total,
             ]
         ]);
     }

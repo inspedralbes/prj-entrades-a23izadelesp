@@ -70,3 +70,4 @@ Route::middleware('auth:sanctum')->prefix('profile')->group(function () {
 // Bookings (cola de compra)
 Route::post('/bookings', [BookingController::class, 'store']);
 Route::get('/bookings/{booking}', [BookingController::class, 'status']);
+Route::get('/bookings/{booking}/qr', [BookingController::class, 'qr']);
