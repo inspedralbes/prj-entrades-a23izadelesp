@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\ProfileController;
@@ -65,3 +66,7 @@ Route::middleware('auth:sanctum')->prefix('profile')->group(function () {
     Route::get('/tickets', [ProfileController::class, 'tickets']);
     Route::get('/tickets/{booking}', [ProfileController::class, 'ticket']);
 });
+
+// Bookings (cola de compra)
+Route::post('/bookings', [BookingController::class, 'store']);
+Route::get('/bookings/{booking}', [BookingController::class, 'status']);

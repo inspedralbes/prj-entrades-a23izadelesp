@@ -36,6 +36,11 @@ class Booking extends Model
         return $this->hasMany(OccupiedZone::class);
     }
 
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
     public function scopeGuest($query)
     {
         return $query->whereNull('user_id')->whereNotNull('guest_email');
