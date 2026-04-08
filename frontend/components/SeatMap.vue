@@ -5,13 +5,17 @@ import { useSocket } from '~/composables/useSocket'
 const props = defineProps<{
   sessionId: number
   layout: { rows: string[], seatsPerRow: number }
+  readonly?: boolean
 }>()
 
 const seatsStore = useSeatsStore()
-const { on, off } = useSocket()
+const { connect, on, off, disconnect } = useSocket()
 
 onMounted(async () => {
   await seatsStore.fetchSeats(props.sessionId)
+  
+  const config = useRuntimeConfig()
+  connect(config.public.socketUrl)
   
   on('seat:locked', (data: any) => {
     if (data.session_id === props.sessionId) {
@@ -29,6 +33,7 @@ onMounted(async () => {
 onUnmounted(() => {
   off('seat:locked')
   off('seat:released')
+  disconnect()
 })
 
 function handleSelect(seatId: number, row: string, number: number, price: number) {
@@ -37,6 +42,12 @@ function handleSelect(seatId: number, row: string, number: number, price: number
 
 function handleDeselect(seatId: number) {
   seatsStore.unlockSeat(seatId)
+}
+
+function toggleSeat(row: string, col: number) {
+  if (props.readonly) return
+  
+  const status = getSeatStatus(row, col)
 }
 
 function getSeat(row: string, number: number) {
@@ -70,6 +81,13 @@ function getSeat(row: string, number: number) {
             @deselect="handleDeselect"
           />
         </div>
+        <div 
+          class="absolute inset-0 flex items-center justify-center font-mono text-[8px] font-bold text-white transition-opacity"
+          :class="[
+            getSeatStatus(row, col) !== 'available' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+            props.readonly ? 'cursor-default' : 'cursor-pointer'
+          ]"
+        ></div>
       </div>
       
       <div class="mt-6 flex justify-center gap-6 text-sm">

@@ -15,7 +15,7 @@ interface Event {
   title: string
   description: string
   image: string
-  type: 'cine' | 'concierto'
+  type: 'movie' | 'concert'
   duration: number
   genre: string
   rating: string

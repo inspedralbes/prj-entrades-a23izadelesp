@@ -25,7 +25,7 @@ function handleClick() {
   if (isSelected.value) {
     emit('deselect', props.id)
   } else {
-    emit('select', props.id, props.number, props.price)
+    emit('select', props.id, props.row, props.number, props.price)
   }
 }
 

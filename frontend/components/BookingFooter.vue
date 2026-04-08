@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useSeatsStore } from '~/stores/seats'
 import { useZonesStore } from '~/stores/zones'
+import { useRouter } from 'vue-router'
 
 const props = defineProps<{
   mode: 'seats' | 'zones'
@@ -34,7 +35,9 @@ const selectionSummary = computed(() => {
 })
 
 function handleBook() {
-  emit('book')
+  if (hasSelection.value) {
+    router.push(`/events/${props.eventId}/checkout/${props.sessionId}`)
+  }
 }
 </script>
 

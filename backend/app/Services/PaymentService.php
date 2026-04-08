@@ -41,19 +41,18 @@ class PaymentService
         $event = $session->event;
         
         foreach ($booking->tickets as $ticket) {
-            if ($ticket->seat_id) {
-                $seatId = $ticket->seat_id;
-                
+            if ($ticket->row !== null && $ticket->col !== null) {
                 OccupiedSeat::create([
                     'booking_id' => $booking->id,
                     'session_id' => $session->id,
-                    'seat_id' => $seatId,
+                    'row' => $ticket->row,
+                    'col' => $ticket->col,
                 ]);
                 
                 $ticket->update(['status' => 'confirmed']);
                 
-                $lockKey = "seat_lock:{$session->id}:{$seatId}";
-                Redis::del($lockKey);
+                $lockKey = "seat:lock:{$session->id}:{$ticket->row}:{$ticket->col}";
+                \Illuminate\Support\Facades\Redis::del($lockKey);
             }
             
             if ($ticket->zone_id) {
@@ -67,8 +66,8 @@ class PaymentService
                 
                 $ticket->update(['status' => 'confirmed']);
                 
-                $lockKey = "zone_lock:{$session->id}:{$zoneId}";
-                Redis::del($lockKey);
+                $lockKey = "zone:lock:{$session->id}:{$zoneId}";
+                \Illuminate\Support\Facades\Redis::del($lockKey);
             }
             
             $qrCode = $this->generateQRCode($booking->id, $ticket->id);
@@ -77,10 +76,16 @@ class PaymentService
         
         $booking->update(['status' => 'confirmed']);
         
+        // Determinar a qué email enviar: el guest_email o el del usuario registrado
+        $email = $booking->guest_email ?? $booking->user?->email;
+        if ($email) {
+            \Illuminate\Support\Facades\Mail::to($email)->send(new \App\Mail\BookingConfirmationMail($booking));
+        }
+        
         $this->publishEvent('booking:confirmed', [
             'booking_id' => $booking->id,
             'session_id' => $session->id,
-            'socket_id' => Redis::get("booking_socket:{$booking->id}"),
+            'socket_id' => \Illuminate\Support\Facades\Redis::get("booking_socket:{$booking->id}"),
         ]);
     }
 
@@ -89,18 +94,17 @@ class PaymentService
         $session = $booking->session;
         
         foreach ($booking->tickets as $ticket) {
-            if ($ticket->seat_id) {
-                $seatId = $ticket->seat_id;
-                $lockKey = "seat_lock:{$session->id}:{$seatId}";
-                Redis::del($lockKey);
+            if ($ticket->row !== null && $ticket->col !== null) {
+                $lockKey = "seat:lock:{$session->id}:{$ticket->row}:{$ticket->col}";
+                \Illuminate\Support\Facades\Redis::del($lockKey);
                 
                 $ticket->update(['status' => 'failed']);
             }
             
             if ($ticket->zone_id) {
                 $zoneId = $ticket->zone_id;
-                $lockKey = "zone_lock:{$session->id}:{$zoneId}";
-                Redis::del($lockKey);
+                $lockKey = "zone:lock:{$session->id}:{$zoneId}";
+                \Illuminate\Support\Facades\Redis::del($lockKey);
                 
                 $ticket->update(['status' => 'failed']);
             }

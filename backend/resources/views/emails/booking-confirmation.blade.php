@@ -51,7 +51,7 @@
                 $seats = [];
                 $zones = [];
                 foreach ($booking->tickets as $ticket) {
-                    if ($ticket->seat) $seats[] = "Fila {$ticket->seat->row}, Seat {$ticket->seat->number}";
+                    if ($ticket->row !== null) $seats[] = "Fila {$ticket->row}, Seient {$ticket->col}";
                     if ($ticket->zone) {
                         if (!isset($zones[$ticket->zone->name])) $zones[$ticket->zone->name] = 0;
                         $zones[$ticket->zone->name]++;

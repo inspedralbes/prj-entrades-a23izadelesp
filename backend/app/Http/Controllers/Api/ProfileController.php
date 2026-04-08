@@ -48,7 +48,7 @@ class ProfileController extends Controller
             return response()->json(['error' => 'No autorizado'], 403);
         }
         
-        $booking->load(['event', 'session', 'tickets', 'tickets.seat', 'tickets.zone']);
+        $booking->load(['event', 'session', 'tickets', 'tickets.zone']);
         
         return response()->json([
             'data' => [
@@ -68,9 +68,9 @@ class ProfileController extends Controller
                 ],
                 'tickets' => $booking->tickets->map(fn ($ticket) => [
                     'id' => $ticket->id,
-                    'seat' => $ticket->seat ? [
-                        'row' => $ticket->seat->row,
-                        'number' => $ticket->seat->number,
+                    'seat' => $ticket->row !== null ? [
+                        'row' => $ticket->row,
+                        'number' => $ticket->col,
                     ] : null,
                     'zone' => $ticket->zone ? [
                         'name' => $ticket->zone->name,

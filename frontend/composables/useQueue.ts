@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { useSocket } from '~/composables/useSocket'
 import { useSessionStore } from '~/stores/session'
+import { useApi } from '~/composables/useApi'
 
 export function useQueue(sessionId: number, eventId: number) {
   const position = ref<number | null>(null)
@@ -15,8 +16,22 @@ export function useQueue(sessionId: number, eventId: number) {
     const config = useRuntimeConfig()
     connect(config.public.socketUrl)
 
+    const identifier = localStorage.getItem('auth-token') 
+      ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}` 
+      : localStorage.getItem('guest-identifier') || ''
+
+    useApi().post(`/sessions/${sessionId}/queue/position`, { identifier }).then((res: any) => {
+      if (res && res.active) {
+        isAdmitted.value = true
+        isProcessing.value = false
+      } else if (res && res.position > 0) {
+        position.value = res.position
+        sessionStore.setPosition(res.position)
+      }
+    }).catch(console.error)
+
     on('queue:position', (data: any) => {
-      if (data.session_id === sessionId) {
+      if (data.session_id === sessionId && data.identifier === identifier) {
         position.value = data.position
         isProcessing.value = true
         sessionStore.setPosition(data.position)
@@ -24,7 +39,7 @@ export function useQueue(sessionId: number, eventId: number) {
     })
 
     on('queue:admitted', (data: any) => {
-      if (data.session_id === sessionId) {
+      if (data.session_id === sessionId && data.identifier === identifier) {
         isAdmitted.value = true
         isProcessing.value = false
       }

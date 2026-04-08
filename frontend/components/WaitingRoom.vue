@@ -11,20 +11,30 @@ const router = useRouter()
 const sessionStore = useSessionStore()
 const { connected, on, off, disconnect } = useSocket()
 
+const emit = defineEmits(['admitted'])
+
 const processing = ref(true)
 
 onMounted(() => {
   const config = useRuntimeConfig()
   useSocket().connect(config.public.socketUrl)
 
+  const identifier = localStorage.getItem('auth-token') 
+    ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}` 
+    : localStorage.getItem('guest-identifier') || ''
+
   on('queue:position', (data: any) => {
-    sessionStore.setPosition(data.position)
-    processing.value = true
+    if (data.identifier === identifier) {
+      sessionStore.setPosition(data.position)
+      processing.value = true
+    }
   })
 
-  on('queue:admitted', () => {
-    sessionStore.setWaitingRoom(false)
-    router.push(`/events/${props.eventId}/seats/${props.sessionId}`)
+  on('queue:admitted', (data: any) => {
+    if (data.identifier === identifier) {
+      sessionStore.setWaitingRoom(false)
+      emit('admitted')
+    }
   })
 
   on('queue:remaining', () => {
@@ -48,41 +58,27 @@ function getTimeEstimate(position: number) {
 </script>
 
 <template>
-  <div class="flex min-h-[60vh] flex-col items-center justify-center px-4 py-12">
-    <div class="w-full max-w-md text-center">
-      <div class="mb-8 flex justify-center">
-        <div class="relative h-24 w-24">
-          <div class="absolute inset-0 animate-ping rounded-full border-4 border-black bg-secondary/30" />
-          <div class="absolute inset-0 animate-pulse rounded-full border-4 border-black bg-secondary" />
-        </div>
+  <div class="fixed bottom-6 left-1/2 z-50 flex w-full max-w-sm -translate-x-1/2 flex-col items-center gap-4 rounded-xl border-4 border-black bg-white p-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+    <div class="flex w-full items-center justify-between">
+      <div>
+        <h2 class="text-lg font-bold">Sala d'Espera</h2>
+        <p class="text-sm text-gray-600">Posició #{{ sessionStore.position || 0 }}</p>
       </div>
-
-      <h2 class="mb-2 text-2xl font-bold">Sala d\'Espera</h2>
-      <p class="mb-6 text-gray-600">El teu torn arriba...</p>
-
-      <div class="card-brutal mb-6 p-6">
-        <p class="mb-2 text-sm text-gray-500">La teva posició</p>
-        <p class="text-6xl font-bold text-primary">#{{ sessionStore.position }}</p>
+      <div class="rounded-full border-2 border-black bg-yellow-400 px-3 py-1 font-bold">
+        {{ getTimeEstimate(sessionStore.position || 0) }}
       </div>
+    </div>
+    
+    <div v-if="processing" class="w-full text-center">
+      <p class="animate-pulse text-xs font-medium text-gray-500">Processant posició...</p>
+    </div>
 
-      <div class="card-brutal mb-6 p-4">
-        <p class="mb-1 text-sm text-gray-500">Temps estimat</p>
-        <p class="text-xl font-bold">{{ getTimeEstimate(sessionStore.position || 0) }}</p>
-      </div>
-
-      <div v-if="processing" class="mb-6">
-        <p class="animate-pulse text-lg font-medium">Gestionando la teva solicitud...</p>
-      </div>
-
-      <div class="mt-8 border-2 border-black bg-gray-100 p-4">
-        <p class="text-sm">
-          <span v-if="connected" class="flex items-center justify-center gap-2 text-green-600">
-            <span class="h-2 w-2 animate-pulse rounded-full bg-green-600" />
-            Connexió activa
-          </span>
-          <span v-else class="text-red-600">Esperant connexió...</span>
-        </p>
-      </div>
+    <div class="w-full text-center text-xs">
+      <span v-if="connected" class="inline-flex items-center gap-1 text-green-600">
+        <span class="h-2 w-2 animate-pulse rounded-full bg-green-600" />
+        Connectat per socket
+      </span>
+      <span v-else class="text-red-600">Desconnectat...</span>
     </div>
   </div>
 </template>

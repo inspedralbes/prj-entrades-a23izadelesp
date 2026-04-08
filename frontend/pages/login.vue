@@ -20,9 +20,10 @@ const loginWithEmail = async () => {
     })
 
     if (response && (response as any).token) {
-      // Guardar token
       localStorage.setItem('auth-token', (response as any).token)
-      // Redirigir a home
+      if ((response as any).user?.name) {
+        localStorage.setItem('user-name', (response as any).user.name)
+      }
       await router.push('/')
     }
   } catch (err: any) {
@@ -38,7 +39,6 @@ const loginWithGoogle = async () => {
 
     const response = await post('/auth/google', {})
 
-    // Redirigir a Google
     if (response && (response as any).url) {
       window.location.href = (response as any).url
     }
@@ -53,7 +53,6 @@ const loginWithGoogle = async () => {
 <template>
   <div class="min-h-screen flex items-center justify-center bg-[#FDFDFC] px-4 py-8">
     <div class="w-full max-w-sm card-brutal p-8">
-      <!-- Header -->
       <div class="mb-8">
         <h1 class="text-3xl font-bold mb-2">Queue<span class="text-primary">Ly</span></h1>
         <p class="text-sm text-gray-600">Accede a tu cuenta para continuar</p>

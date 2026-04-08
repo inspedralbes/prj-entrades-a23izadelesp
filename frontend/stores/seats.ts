@@ -47,11 +47,18 @@ export const useSeatsStore = defineStore('seats', () => {
   async function lockSeat(seatId: number, row: string, number: number, price: number) {
     if (!sessionId.value) return
     const config = useRuntimeConfig()
+    const identifier = localStorage.getItem('auth-token') 
+        ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}` 
+        : localStorage.getItem('guest-identifier') || `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    
+    // Guardar el identifier si somos guest
+    if (!localStorage.getItem('auth-token')) localStorage.setItem('guest-identifier', identifier)
+
     try {
       const res = await fetch(`${config.public.apiBase}/sessions/${sessionId.value}/seats/lock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seat_id: seatId })
+        body: JSON.stringify({ row: parseInt(row), col: number, identifier })
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       selectedSeats.value.push({ seatId, row, number, price })
@@ -63,11 +70,19 @@ export const useSeatsStore = defineStore('seats', () => {
   async function unlockSeat(seatId: number) {
     if (!sessionId.value) return
     const config = useRuntimeConfig()
+    
+    const identifier = localStorage.getItem('auth-token') 
+        ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}` 
+        : localStorage.getItem('guest-identifier')
+
     try {
+      const seat = selectedSeats.value.find(s => s.seatId === seatId)
+      if (!seat) return
+
       await fetch(`${config.public.apiBase}/sessions/${sessionId.value}/seats/unlock`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seat_id: seatId })
+        body: JSON.stringify({ row: parseInt(seat.row), col: seat.number, identifier })
       })
       selectedSeats.value = selectedSeats.value.filter(s => s.seatId !== seatId)
     } catch (e) {

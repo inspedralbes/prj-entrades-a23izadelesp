@@ -57,7 +57,7 @@ class QrService
 
     private function buildQrData(Booking $booking): string
     {
-        $booking->load(['session.event', 'tickets.seat', 'tickets.zone']);
+        $booking->load(['session.event', 'tickets.zone']);
         
         $event = $booking->session->event;
         $session = $booking->session;
@@ -73,8 +73,8 @@ class QrService
         $zones = [];
         
         foreach ($booking->tickets as $ticket) {
-            if ($ticket->seat) {
-                $seats[] = "F{$ticket->seat->row}-{$ticket->seat->number}";
+            if ($ticket->row !== null) {
+                $seats[] = "F{$ticket->row}-{$ticket->col}";
             }
             if ($ticket->zone) {
                 if (!isset($zones[$ticket->zone->name])) {

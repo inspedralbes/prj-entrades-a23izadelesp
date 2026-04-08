@@ -25,7 +25,6 @@ function downloadQR(qrCode: string) {
 
 <template>
   <div>
-    <TopBar />
     <main class="mx-auto max-w-3xl px-4 py-8">
       <NuxtLink to="/profile/tickets" class="mb-4 inline-flex items-center gap-2 text-sm font-medium hover:underline">
         ← Tornar

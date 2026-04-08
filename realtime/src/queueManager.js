@@ -22,21 +22,23 @@ class QueueManager {
         const position = await this.redis.lindex(queueKey, 0);
         
         if (position) {
-          const userData = JSON.parse(position);
           const usersToAdmit = await this.redis.lrange(queueKey, 0, this.admissionBatchSize - 1);
+          console.log(`Admitiendo a ${usersToAdmit.length} usuarios para sesión ${sessionId}`, usersToAdmit);
           
-          for (const userRaw of usersToAdmit) {
-            const user = JSON.parse(userRaw);
-            if (user.socket_id) {
-              this.io.to(user.socket_id).emit('queue:admitted', {
-                session_id: sessionId
-              });
-              this.io.to(`session:${sessionId}`).emit('queue:position', {
-                session_id: sessionId,
-                position: 0,
-                admitted: true
-              });
-            }
+          for (const identifier of usersToAdmit) {
+            console.log(`Emitiendo queue:admitted a session:${sessionId} para identifier:${identifier}`);
+            this.io.to(`session:${sessionId}`).emit('queue:admitted', {
+              session_id: sessionId,
+              identifier: identifier
+            });
+            this.io.to(`session:${sessionId}`).emit('queue:position', {
+              session_id: sessionId,
+              identifier: identifier,
+              position: 0,
+              admitted: true
+            });
+            await this.redis.sadd(`queue:${sessionId}:active`, identifier);
+            await this.redis.del(`queue:position:${sessionId}:${identifier}`);
           }
           
           await this.redis.ltrim(queueKey, this.admissionBatchSize, -1);
@@ -53,32 +55,29 @@ class QueueManager {
     }
   }
 
-  async addToQueue(sessionId, socketId, userId) {
+  async removeByIdentifier(sessionId, identifier) {
     const queueKey = `queue:${sessionId}`;
-    const userData = JSON.stringify({ socket_id: socketId, user_id: userId });
+    const removedCount = await this.redis.lrem(queueKey, 0, identifier);
+    await this.redis.del(`queue:position:${sessionId}:${identifier}`);
     
-    await this.redis.rpush(queueKey, userData);
-    
-    const position = await this.redis.llen(queueKey);
-    
-    this.io.to(socketId).emit('queue:position', {
-      session_id: sessionId,
-      position: position,
-      message: 'Gestionando su solicitud...'
-    });
-  }
-
-  async removeFromQueue(sessionId, socketId) {
-    const queueKey = `queue:${sessionId}`;
-    const users = await this.redis.lrange(queueKey, 0, -1);
-    
-    for (let i = 0; i < users.length; i++) {
-      const user = JSON.parse(users[i]);
-      if (user.socket_id === socketId) {
-        await this.redis.lset(queueKey, i, '__DELETED__');
-        await this.redis.lrem(queueKey, 0, '__DELETED__');
-        break;
+    if (removedCount > 0) {
+      // Notificar a los que quedan del cambio de posición, lo hará Laravel o el bucle
+      const remaining = await this.redis.lrange(queueKey, 0, -1);
+      for (let i = 0; i < remaining.length; i++) {
+        const id = remaining[i];
+        const pos = i + 1;
+        await this.redis.set(`queue:position:${sessionId}:${id}`, pos);
+        this.io.to(`session:${sessionId}`).emit('queue:position', {
+          session_id: sessionId,
+          identifier: id,
+          position: pos
+        });
       }
+      
+      this.io.to(`session:${sessionId}`).emit('queue:remaining', {
+        session_id: sessionId,
+        count: remaining.length
+      });
     }
   }
 }

@@ -17,7 +17,7 @@ class BookingConfirmationMail extends Mailable
 
     public function __construct(Booking $booking)
     {
-        $this->booking = $booking->load(['session.event', 'tickets.seat', 'tickets.zone']);
+        $this->booking = $booking->load(['session.event', 'tickets.zone']);
     }
 
     public function envelope(): Envelope
@@ -29,8 +29,14 @@ class BookingConfirmationMail extends Mailable
 
     public function content(): Content
     {
+        $qrService = app(\App\Services\QrService::class);
+        $qrImage = $qrService->generate($this->booking);
+
         return new Content(
             view: 'emails.booking-confirmation',
+            with: [
+                'qrImage' => $qrImage,
+            ],
         );
     }
 }

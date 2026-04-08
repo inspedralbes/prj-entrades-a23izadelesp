@@ -13,7 +13,7 @@ class EventController
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Event::query();
+        $query = Event::with('sessions');
 
         if ($request->has('type')) {
             $query->where('type', $request->input('type'));

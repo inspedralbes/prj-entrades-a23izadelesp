@@ -20,7 +20,6 @@ function formatDate(dateStr: string) {
 
 <template>
   <div>
-    <TopBar />
     <main class="mx-auto max-w-2xl px-4 py-8">
       <div v-if="loading" class="py-12 text-center text-lg font-medium">
         Carregant...

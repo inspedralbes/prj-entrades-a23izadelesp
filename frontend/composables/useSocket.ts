@@ -35,7 +35,7 @@ export function useSocket() {
   }
 
   function emit(event: string, data: unknown) {
-    if (socket?.connected) {
+    if (socket) {
       socket.emit(event, data)
     }
   }

@@ -16,26 +16,14 @@ onMounted(async () => {
   await sessionStore.fetchEvent(eventId)
 })
 
-watch(() => sessionStore.selectedSession, async (session) => {
+const isJoiningQueue = ref(false)
+
+async function joinQueue() {
+  const session = sessionStore.selectedSession
   if (!session) return
 
-  const socketUrl = config.public.socketUrl
-  connect(socketUrl)
-
-  on('queue:position', (data: any) => {
-    sessionStore.setPosition(data.position)
-    sessionStore.setWaitingRoom(true)
-  })
-
-  on('queue:admitted', () => {
-    sessionStore.setWaitingRoom(false)
-    router.push(`/events/${eventId}/seats/${session.id}`)
-  })
-
-  const res = await post(`/sessions/${session.id}/queue/join`, {
-    user_id: 1
-  })
-})
+  router.push(`/events/${eventId}/seats/${session.id}`)
+}
 
 onUnmounted(() => {
   disconnect()
@@ -50,7 +38,6 @@ function formatDuration(minutes: number) {
 
 <template>
   <div>
-    <TopBar />
     <div v-if="sessionStore.loading" class="py-12 text-center text-lg font-medium">
       Carregant...
     </div>
@@ -68,9 +55,9 @@ function formatDuration(minutes: number) {
         <div class="absolute bottom-4 left-4 right-4">
           <span
             class="mb-2 inline-block border-2 border-black px-2 py-0.5 text-xs font-semibold"
-            :class="sessionStore.event.type === 'cine' ? 'bg-secondary' : 'bg-primary'"
+            :class="sessionStore.event.type === 'movie' ? 'bg-secondary' : 'bg-primary'"
           >
-            {{ sessionStore.event.type === 'cine' ? '🎬 Cine' : '🎤 Concierto' }}
+            {{ sessionStore.event.type === 'movie' ? '🎬 Cine' : '🎤 Concierto' }}
           </span>
           <h1 class="text-3xl font-bold text-white">{{ sessionStore.event.title }}</h1>
         </div>
@@ -106,18 +93,10 @@ function formatDuration(minutes: number) {
 
         <div v-if="sessionStore.selectedSession" class="mt-6">
           <button
-            v-if="sessionStore.inWaitingRoom"
-            class="btn-brutal w-full"
-            @click="router.push(`/events/${eventId}/seats/${sessionStore.selectedSession.id}`)"
+            class="btn-brutal w-full bg-primary text-white"
+            @click="joinQueue"
           >
-            Estàs a la cua (#{{ sessionStore.position }}) - Clic per accedir
-          </button>
-          <button
-            v-else
-            class="btn-brutal w-full"
-            @click="router.push(`/events/${eventId}/seats/${sessionStore.selectedSession.id}`)"
-          >
-            Accedir al mapa de seats
+            Veure seients
           </button>
         </div>
       </div>

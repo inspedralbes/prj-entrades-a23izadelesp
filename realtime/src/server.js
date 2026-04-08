@@ -15,7 +15,7 @@ const io = new Server(httpServer, {
   }
 });
 
-const redis = new Redis(REDIS_URL);
+const redis = new Redis(REDIS_URL, { keyPrefix: 'queuely-database-' });
 const redisSubscriber = new RedisSubscriber(io);
 const queueManager = new QueueManager(io, redis);
 
@@ -29,19 +29,20 @@ io.on('connection', (socket) => {
     await redis.sadd('active_sessions', sessionId);
   });
 
-  socket.on('join:queue', async (data) => {
-    const { session_id, user_id } = data;
-    await queueManager.addToQueue(session_id, socket.id, user_id);
+  socket.on('register:queue', async (data) => {
+    const { session_id, identifier } = data;
+    socket.data = { session_id, identifier };
     socket.join(`session:${session_id}`);
-  });
-
-  socket.on('leave:session', async (sessionId) => {
-    socket.leave(`session:${sessionId}`);
-    await queueManager.removeFromQueue(sessionId, socket.id);
+    await redis.sadd('active_sessions', session_id);
+    console.log(`Socket ${socket.id} registered for queue ${session_id} as ${identifier}`);
   });
 
   socket.on('disconnect', async () => {
     console.log(`Client disconnected: ${socket.id}`);
+    if (socket.data && socket.data.session_id && socket.data.identifier) {
+      await queueManager.removeByIdentifier(socket.data.session_id, socket.data.identifier);
+      console.log(`Removed ${socket.data.identifier} from queue ${socket.data.session_id} due to disconnect`);
+    }
   });
 });
 

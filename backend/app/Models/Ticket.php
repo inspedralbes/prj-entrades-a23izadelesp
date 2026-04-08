@@ -9,17 +9,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Ticket extends Model
 {
     use HasFactory;
-    protected $fillable = ['booking_id', 'seat_id', 'zone_id', 'qr_code', 'status'];
+    protected $fillable = ['booking_id', 'row', 'col', 'zone_id', 'qr_code', 'status'];
 
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
     }
 
-    public function seat(): BelongsTo
-    {
-        return $this->belongsTo(Seat::class);
-    }
+
 
     public function zone(): BelongsTo
     {

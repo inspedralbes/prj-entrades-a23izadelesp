@@ -18,9 +18,10 @@ class BookingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'session_id' => 'required|exists:sessions,id',
+            'session_id' => 'required|exists:app_sessions,id',
             'seats' => 'array',
-            'seats.*.seat_id' => 'exists:seats,id',
+            'seats.*.row' => 'required',
+            'seats.*.col' => 'required|integer',
             'zones' => 'array',
             'zones.*.zone_id' => 'exists:zones,id',
             'zones.*.quantity' => 'integer|min:1|max:10',
@@ -39,7 +40,7 @@ class BookingController extends Controller
         $zones = $validated['zones'] ?? [];
 
         foreach ($seats as $seat) {
-            $lockKey = "seat_lock:{$validated['session_id']}:{$seat['seat_id']}";
+            $lockKey = "seat:lock:{$validated['session_id']}:{$seat['row']}:{$seat['col']}";
             if (!Redis::exists($lockKey)) {
                 return response()->json(['error' => 'Seat no bloquejat'], 422);
             }
@@ -47,7 +48,7 @@ class BookingController extends Controller
         }
 
         foreach ($zones as $zone) {
-            $lockKey = "zone_lock:{$validated['session_id']}:{$zone['zone_id']}";
+            $lockKey = "zone:lock:{$validated['session_id']}:{$zone['zone_id']}";
             if (!Redis::exists($lockKey)) {
                 return response()->json(['error' => 'Zona no bloquejada'], 422);
             }
@@ -65,7 +66,8 @@ class BookingController extends Controller
         foreach ($seats as $seat) {
             Ticket::create([
                 'booking_id' => $booking->id,
-                'seat_id' => $seat['seat_id'],
+                'row' => $seat['row'],
+                'col' => $seat['col'],
             ]);
         }
 
@@ -94,7 +96,7 @@ class BookingController extends Controller
 
     public function status(Booking $booking)
     {
-        $booking->load(['tickets.seat', 'tickets.zone', 'session.event']);
+        $booking->load(['tickets.zone', 'session.event']);
         
         return response()->json([
             'data' => [
@@ -108,7 +110,7 @@ class BookingController extends Controller
 
     public function qr(Booking $booking, QrService $qrService)
     {
-        $booking->load(['session.event', 'tickets.seat', 'tickets.zone']);
+        $booking->load(['session.event', 'tickets.zone']);
         
         $qrImage = $qrService->generate($booking);
         

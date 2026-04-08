@@ -11,7 +11,8 @@ return new class extends Migration
         Schema::create('tickets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('booking_id')->constrained()->onDelete('cascade');
-            $table->foreignId('seat_id')->nullable()->constrained()->onDelete('cascade');
+            $table->string('row')->nullable();
+            $table->integer('col')->nullable();
             $table->foreignId('zone_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('qr_code')->nullable();
             $table->string('status')->default('pending');

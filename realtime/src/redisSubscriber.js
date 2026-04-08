@@ -11,12 +11,12 @@ class RedisSubscriber {
 
   setupListeners() {
     const channels = [
-      'seat:locked',
-      'seat:released',
-      'queue:updated',
-      'booking:processing',
-      'booking:confirmed',
-      'booking:failed'
+      'queuely-database-seat:locked',
+      'queuely-database-seat:released',
+      'queuely-database-queue:updated',
+      'queuely-database-booking:processing',
+      'queuely-database-booking:confirmed',
+      'queuely-database-booking:failed'
     ];
 
     channels.forEach(channel => {
@@ -40,24 +40,24 @@ class RedisSubscriber {
       console.log(`Received from ${channel}:`, data);
 
       switch (channel) {
-        case 'seat:locked':
-        case 'seat:released':
+        case 'queuely-database-seat:locked':
+        case 'queuely-database-seat:released':
           if (data.session_id) {
-            this.io.to(`session:${data.session_id}`).emit(channel, data);
+            this.io.to(`session:${data.session_id}`).emit(channel.replace('queuely-database-', ''), data);
           }
           break;
 
-        case 'queue:updated':
+        case 'queuely-database-queue:updated':
           if (data.session_id && data.socket_id) {
             this.io.to(`session:${data.session_id}`).emit('queue:position', data);
           }
           break;
 
-        case 'booking:processing':
-        case 'booking:confirmed':
-        case 'booking:failed':
+        case 'queuely-database-booking:processing':
+        case 'queuely-database-booking:confirmed':
+        case 'queuely-database-booking:failed':
           if (data.socket_id) {
-            this.io.to(data.socket_id).emit(channel, data);
+            this.io.to(data.socket_id).emit(channel.replace('queuely-database-', ''), data);
           }
           break;
       }

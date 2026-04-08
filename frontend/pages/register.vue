@@ -32,6 +32,9 @@ const register = async () => {
     if (response && (response as any).token) {
       success.value = true
       localStorage.setItem('auth-token', (response as any).token)
+      if ((response as any).user?.name) {
+        localStorage.setItem('user-name', (response as any).user.name)
+      }
       setTimeout(() => {
         router.push('/')
       }, 2000)
