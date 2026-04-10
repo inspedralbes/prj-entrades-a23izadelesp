@@ -39,4 +39,14 @@ class AppSession extends Model
     {
         return $this->hasMany(OccupiedZone::class);
     }
+
+    public function occupiedZoneSeats(): HasMany
+    {
+        return $this->hasMany(OccupiedZoneSeat::class, 'session_id');
+    }
+
+    public function zones(): HasMany
+    {
+        return $this->hasMany(Zone::class, 'session_id')->orderBy('sort_order');
+    }
 }

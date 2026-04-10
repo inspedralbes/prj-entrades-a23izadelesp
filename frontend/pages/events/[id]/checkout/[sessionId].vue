@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useSeatsStore } from '../../../../stores/seats'
+import { useZonesStore } from '../../../../stores/zones'
+import { useSessionStore } from '../../../../stores/session'
+import { useApi } from '../../../../composables/useApi'
 
 const router = useRouter()
 const route = useRoute()
 const seatsStore = useSeatsStore()
 const zonesStore = useZonesStore()
 const sessionStore = useSessionStore()
-const { post } = useApi()
+const api = useApi()
+const { post } = api
 
 const eventId = parseInt(route.params.id as string)
 const sessionId = parseInt(route.params.sessionId as string)
@@ -26,14 +32,17 @@ const bookingSummary = computed(() => {
   if (isCine) {
     return {
       type: 'seats',
-      items: seatsStore.selectedSeats.map(s => `Fila ${s.row}, Asiento ${s.number}`),
+      items: seatsStore.selectedSeats.map((s: any) => `Fila ${s.row}, Asiento ${s.number}`),
       total: seatsStore.totalPrice,
       count: seatsStore.selectedSeats.length
     }
   } else {
+    const generalItems = zonesStore.selectedZones.map((z: any) => `${z.name} (${z.lockIds.length})`)
+    const seatedItems = zonesStore.selectedZoneSeats.map((s: any) => `${s.zoneName} ${s.label}`)
+
     return {
       type: 'zones',
-      items: zonesStore.selectedZones.map(z => `${z.name} (${z.quantity})`),
+      items: [...generalItems, ...seatedItems],
       total: zonesStore.totalPrice,
       count: zonesStore.totalQuantity
     }
@@ -44,7 +53,7 @@ const canCheckout = computed(() => {
   if (sessionStore.event?.type === 'movie') {
     return seatsStore.selectedSeats.length > 0
   }
-  return zonesStore.selectedZones.length > 0
+  return zonesStore.selectedZones.length > 0 || zonesStore.selectedZoneSeats.length > 0
 })
 
 async function handleCheckout() {
@@ -58,25 +67,43 @@ async function handleCheckout() {
     error.value = ''
 
     const seats = sessionStore.event?.type === 'movie' 
-      ? seatsStore.selectedSeats.map(s => ({
-          row: s.row,
-          col: s.number,
+      ? seatsStore.selectedSeats.map((s: any) => ({
+          row: s.apiRow,
+          col: s.apiCol,
           price: s.price
         }))
       : []
 
     const zones = sessionStore.event?.type !== 'movie'
-      ? zonesStore.selectedZones.map(z => ({
-          zone_id: z.zoneId,
-          quantity: z.quantity,
-          price: z.price
+      ? zonesStore.selectedZones.flatMap((z: any) =>
+          (z.lockIds || []).map((lockId: string) => ({
+            zone_id: z.zoneId,
+            quantity: 1,
+            lock_id: lockId
+          }))
+        )
+      : []
+
+    const zoneSeats = sessionStore.event?.type !== 'movie'
+      ? zonesStore.selectedZoneSeats.map((s: any) => ({
+          zone_id: s.zoneId,
+          row: s.row,
+          col: s.col
         }))
       : []
 
     const payload: any = {
       session_id: sessionId,
+      identifier: localStorage.getItem('auth-token')
+        ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}`
+        : localStorage.getItem('guest-identifier') || `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       seats,
-      zones
+      zones,
+      zone_seats: zoneSeats
+    }
+
+    if (!localStorage.getItem('auth-token')) {
+      localStorage.setItem('guest-identifier', payload.identifier)
     }
 
     if (!isLoggedIn.value) {
@@ -89,7 +116,12 @@ async function handleCheckout() {
 
     const response = await post('/bookings', payload)
 
-    if (response && (response as any).data) {
+    if (!response) {
+      error.value = api.error.value || 'No s\'ha pogut completar la reserva. Alguns seients poden no estar disponibles.'
+      return
+    }
+
+    if ((response as any).data) {
       const bookingId = (response as any).data.id
       await router.push(`/bookings/${bookingId}/confirmed`)
     }

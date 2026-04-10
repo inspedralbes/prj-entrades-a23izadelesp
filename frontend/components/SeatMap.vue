@@ -9,23 +9,24 @@ const props = defineProps<{
 }>()
 
 const seatsStore = useSeatsStore()
-const { connect, on, off, disconnect } = useSocket()
+const { connect, emit, on, off, disconnect } = useSocket()
 
 onMounted(async () => {
   await seatsStore.fetchSeats(props.sessionId)
   
   const config = useRuntimeConfig()
   connect(config.public.socketUrl)
+  emit('join:session', props.sessionId)
   
   on('seat:locked', (data: any) => {
     if (data.session_id === props.sessionId) {
-      seatsStore.updateSeatStatus(data.seat_id, 'occupied')
+      seatsStore.updateSeatStatusByGrid(data.row, data.col, 'blocked')
     }
   })
   
   on('seat:released', (data: any) => {
     if (data.session_id === props.sessionId) {
-      seatsStore.updateSeatStatus(data.seat_id, 'available')
+      seatsStore.updateSeatStatusByGrid(data.row, data.col, 'available')
     }
   })
 })
@@ -44,64 +45,61 @@ function handleDeselect(seatId: number) {
   seatsStore.unlockSeat(seatId)
 }
 
-function toggleSeat(row: string, col: number) {
-  if (props.readonly) return
-  
-  const status = getSeatStatus(row, col)
-}
-
-function getSeat(row: string, number: number) {
-  return seatsStore.seats.find(s => s.row === row && s.number === number)
+function getRowSeats(row: string) {
+  return seatsStore.seats
+    .filter((seat) => seat.row === row)
+    .sort((a, b) => a.apiCol - b.apiCol)
 }
 </script>
 
 <template>
-  <div class="overflow-x-auto py-4">
+  <div class="card-brutal bg-white p-3 sm:p-5">
     <div v-if="seatsStore.loading" class="py-12 text-center text-lg font-medium">
       Carregant seats...
     </div>
-    <div v-else class="inline-block">
-      <div class="mb-2 text-center text-sm font-medium text-gray-500">PANTALLA</div>
-      <div class="mb-6 flex justify-center">
-        <div class="h-2 w-3/4 border-b-2 border-black" />
-      </div>
-      
-      <div v-for="row in layout.rows" :key="row" class="mb-1 flex items-center gap-1">
-        <span class="w-6 text-center text-sm font-bold">{{ row }}</span>
-        <div class="flex gap-1">
-          <SeatCell
-            v-for="num in layout.seatsPerRow"
-            :key="num"
-            :id="getSeat(row, num)?.id || 0"
-            :row="row"
-            :number="num"
-            :status="getSeat(row, num)?.status || 'available'"
-            :price="getSeat(row, num)?.price || 0"
-            @select="handleSelect"
-            @deselect="handleDeselect"
-          />
+    <div v-else class="overflow-x-auto pb-1">
+      <div class="flex w-full justify-center">
+        <div class="inline-block min-w-max">
+        <div class="mb-1 text-center text-xs font-extrabold tracking-[0.2em] text-gray-600 sm:text-sm">PANTALLA</div>
+        <div class="mb-5 flex justify-center sm:mb-6">
+          <div class="h-3 w-48 rounded-t-full border-2 border-black border-b-0 bg-gray-100 sm:w-72" />
         </div>
-        <div 
-          class="absolute inset-0 flex items-center justify-center font-mono text-[8px] font-bold text-white transition-opacity"
-          :class="[
-            getSeatStatus(row, col) !== 'available' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-            props.readonly ? 'cursor-default' : 'cursor-pointer'
-          ]"
-        ></div>
+
+        <div v-for="row in layout.rows" :key="row" class="mb-2 flex items-center gap-2">
+          <span class="w-7 text-center text-sm font-extrabold sm:w-8 sm:text-base">{{ row }}</span>
+          <div class="flex gap-1.5 sm:gap-2">
+            <SeatCell
+              v-for="seat in getRowSeats(row)"
+              :key="seat.id"
+              :id="seat.id"
+              :row="seat.row"
+              :number="seat.number"
+              :status="seat.status"
+              :price="seat.price"
+              @select="handleSelect"
+              @deselect="handleDeselect"
+            />
+          </div>
+        </div>
       </div>
-      
-      <div class="mt-6 flex justify-center gap-6 text-sm">
-        <div class="flex items-center gap-2">
+      </div>
+
+      <div class="mt-5 grid grid-cols-1 gap-2 text-sm sm:mt-6 sm:grid-cols-4 sm:gap-4">
+        <div class="flex items-center justify-center gap-2 border-2 border-black bg-white px-3 py-2">
           <div class="h-4 w-4 border-2 border-black bg-white" />
-          <span>Lliure</span>
+          <span class="font-medium">Lliure</span>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center justify-center gap-2 border-2 border-black bg-white px-3 py-2">
           <div class="h-4 w-4 border-2 border-black bg-black" />
-          <span>Ocupat</span>
+          <span class="font-medium">Ocupat</span>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center justify-center gap-2 border-2 border-black bg-white px-3 py-2">
+          <div class="h-4 w-4 border-2 border-black bg-secondary" />
+          <span class="font-medium">Reservat</span>
+        </div>
+        <div class="flex items-center justify-center gap-2 border-2 border-black bg-white px-3 py-2">
           <div class="h-4 w-4 border-2 border-black bg-primary" />
-          <span>Seleccionat</span>
+          <span class="font-medium">Seleccionat</span>
         </div>
       </div>
     </div>

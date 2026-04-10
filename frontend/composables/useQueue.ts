@@ -9,29 +9,59 @@ export function useQueue(sessionId: number, eventId: number) {
   const isProcessing = ref(true)
   const queueLength = ref(0)
   
-  const { connected, on, off, connect, disconnect } = useSocket()
+  const { connected, emit, on, off, connect, disconnect } = useSocket()
   const sessionStore = useSessionStore()
+
+  function getIdentifier() {
+    const token = localStorage.getItem('auth-token')
+
+    if (token) {
+      return `user_${token.split('|')[0]}`
+    }
+
+    let guestIdentifier = localStorage.getItem('guest-identifier')
+
+    if (!guestIdentifier) {
+      guestIdentifier = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      localStorage.setItem('guest-identifier', guestIdentifier)
+    }
+
+    return guestIdentifier
+  }
 
   function init() {
     const config = useRuntimeConfig()
     connect(config.public.socketUrl)
+    emit('join:session', sessionId)
 
-    const identifier = localStorage.getItem('auth-token') 
-      ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}` 
-      : localStorage.getItem('guest-identifier') || ''
+    const identifier = getIdentifier()
 
-    useApi().post(`/sessions/${sessionId}/queue/position`, { identifier }).then((res: any) => {
+    useApi().get(`/sessions/${sessionId}/queue/position?identifier=${encodeURIComponent(identifier)}`).then((res: any) => {
       if (res && res.active) {
         isAdmitted.value = true
         isProcessing.value = false
+        position.value = 0
+        sessionStore.setPosition(0)
       } else if (res && res.position > 0) {
         position.value = res.position
+        isProcessing.value = true
         sessionStore.setPosition(res.position)
+      } else {
+        position.value = null
+        isProcessing.value = false
       }
     }).catch(console.error)
 
     on('queue:position', (data: any) => {
       if (data.session_id === sessionId && data.identifier === identifier) {
+        if (data.admitted || data.status === 'admitted' || data.position === 0) {
+          isAdmitted.value = true
+          isProcessing.value = false
+          position.value = 0
+          sessionStore.setPosition(0)
+          return
+        }
+
         position.value = data.position
         isProcessing.value = true
         sessionStore.setPosition(data.position)
@@ -42,6 +72,8 @@ export function useQueue(sessionId: number, eventId: number) {
       if (data.session_id === sessionId && data.identifier === identifier) {
         isAdmitted.value = true
         isProcessing.value = false
+        position.value = 0
+        sessionStore.setPosition(0)
       }
     })
 

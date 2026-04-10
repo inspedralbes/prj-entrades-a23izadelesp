@@ -12,7 +12,7 @@ EXPOSE 3000
 
 ENV HOST=0.0.0.0
 ENV PORT=3000
-ENV API_BASE_URL=http://nginx/api
+ENV API_BASE_URL=/api
 ENV SOCKET_URL=http://localhost:3001
 
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

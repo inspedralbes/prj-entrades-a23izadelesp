@@ -5,36 +5,32 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Zone extends Model
+class VenueTemplateZone extends Model
 {
     use HasFactory;
+
     protected $fillable = [
-        'session_id',
+        'venue_template_id',
         'key',
         'name',
         'zone_type',
-        'price',
         'capacity',
-        'available',
+        'price',
         'color',
         'sort_order',
         'seat_layout',
+        'shape',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'seat_layout' => 'array',
+        'shape' => 'array',
     ];
 
-    public function session(): BelongsTo
+    public function template(): BelongsTo
     {
-        return $this->belongsTo(AppSession::class);
-    }
-
-    public function occupiedZoneSeats(): HasMany
-    {
-        return $this->hasMany(OccupiedZoneSeat::class);
+        return $this->belongsTo(VenueTemplate::class, 'venue_template_id');
     }
 }

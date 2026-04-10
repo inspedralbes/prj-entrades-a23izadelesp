@@ -13,27 +13,26 @@ beforeEach(function () {
 it('queue maintains FIFO order under load', function () {
     $sessionId = $this->session->id;
     $userCount = 50;
-    
-    $promises = [];
+
     for ($i = 1; $i <= $userCount; $i++) {
-        $promises[] = async(fn () => $this->postJson("/api/sessions/{$sessionId}/queue/join", [
-            'user_id' => $i,
-        ]));
+        $response = $this->postJson("/api/sessions/{$sessionId}/queue/join", [
+            'identifier' => "user_{$i}",
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('position', $i);
     }
-    
-    Promise\all($promises);
-    
+
     $queue = Redis::lrange("queue:{$sessionId}", 0, -1);
-    
+
     expect(count($queue))->toBe($userCount);
-    
+
     for ($i = 0; $i < $userCount; $i++) {
-        $item = json_decode($queue[$i]);
-        expect($item->position)->toBe($i + 1);
+        expect($queue[$i])->toBe('user_'.($i + 1));
     }
-    
+
     Redis::del("queue:{$sessionId}");
-    Redis::del("active_sessions");
+    Redis::del("queue:{$sessionId}:active");
 });
 
 it('admit processes in correct order', function () {
@@ -41,19 +40,25 @@ it('admit processes in correct order', function () {
     $userCount = 20;
     
     for ($i = 1; $i <= $userCount; $i++) {
-        $this->postJson("/api/sessions/{$sessionId}/queue/join", [
-            'user_id' => $i,
+        $response = $this->postJson("/api/sessions/{$sessionId}/queue/join", [
+            'identifier' => "user_{$i}",
         ]);
+
+        $response->assertOk();
     }
-    
-    $this->postJson("/api/sessions/{$sessionId}/queue/admit", [
-        'count' => 5,
+
+    $response = $this->postJson("/api/sessions/{$sessionId}/queue/admit", [
+        'batch_size' => 5,
     ]);
-    
+
+    $response->assertOk();
+    $response->assertJsonCount(5, 'released');
+
     $queue = Redis::lrange("queue:{$sessionId}", 0, -1);
-    
+
     expect(count($queue))->toBe($userCount - 5);
-    
+    expect($queue[0])->toBe('user_6');
+
     Redis::del("queue:{$sessionId}");
-    Redis::del("active_sessions");
+    Redis::del("queue:{$sessionId}:active");
 });

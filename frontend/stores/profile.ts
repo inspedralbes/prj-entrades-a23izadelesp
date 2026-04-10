@@ -52,7 +52,7 @@ export const useProfileStore = defineStore('profile', () => {
     loading.value = true
     error.value = null
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('auth-token')
       const res = await fetch(`${config.public.apiBase}/profile/tickets`, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -71,7 +71,7 @@ export const useProfileStore = defineStore('profile', () => {
     loading.value = true
     error.value = null
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('auth-token')
       const res = await fetch(`${config.public.apiBase}/profile/tickets/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })

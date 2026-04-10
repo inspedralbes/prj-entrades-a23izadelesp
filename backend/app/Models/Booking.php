@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Booking extends Model
 {
     use HasFactory;
-    protected $fillable = ['user_id', 'guest_email', 'session_id', 'status', 'total'];
+    protected $fillable = ['user_id', 'guest_email', 'identifier', 'session_id', 'status', 'total'];
 
     protected $casts = [
         'total' => 'decimal:2',
@@ -34,6 +34,11 @@ class Booking extends Model
     public function occupiedZones(): HasMany
     {
         return $this->hasMany(OccupiedZone::class);
+    }
+
+    public function occupiedZoneSeats(): HasMany
+    {
+        return $this->hasMany(OccupiedZoneSeat::class);
     }
 
     public function tickets(): HasMany

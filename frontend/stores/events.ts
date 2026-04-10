@@ -28,11 +28,12 @@ export const useEventsStore = defineStore('events', () => {
   })
 
   async function fetchEvents() {
+    const config = useRuntimeConfig()
     loading.value = true
     error.value = null
     try {
       const { data } = await useFetch('/api/events', {
-        baseURL: 'http://localhost:8080'
+        baseURL: config.public.apiBase === '/api' ? undefined : config.public.apiBase
       })
       if (data.value) {
         events.value = (data.value as any).data || (data.value as any) || []

@@ -21,7 +21,7 @@ const isSelected = computed(() => {
 })
 
 function handleClick() {
-  if (props.status === 'occupied') return
+  if (props.status === 'occupied' || props.status === 'blocked') return
   if (isSelected.value) {
     emit('deselect', props.id)
   } else {
@@ -33,7 +33,7 @@ const statusClasses = computed(() => {
   if (isSelected.value) return 'bg-primary border-black'
   switch (props.status) {
     case 'occupied': return 'bg-black border-black cursor-not-allowed'
-    case 'blocked': return 'bg-gray-400 border-black'
+    case 'blocked': return 'bg-secondary border-black cursor-not-allowed'
     default: return 'bg-white border-black hover:bg-gray-100'
   }
 })
@@ -41,9 +41,9 @@ const statusClasses = computed(() => {
 
 <template>
   <button
-    class="flex h-8 w-8 items-center justify-center border-2 text-xs font-medium transition-all"
+    class="flex h-8 w-8 items-center justify-center border-2 text-xs font-semibold transition-all sm:h-10 sm:w-10 sm:text-sm"
     :class="statusClasses"
-    :disabled="status === 'occupied'"
+    :disabled="status === 'occupied' || status === 'blocked'"
     @click="handleClick"
   >
     {{ number }}

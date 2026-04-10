@@ -18,6 +18,7 @@ class SessionResource extends JsonResource
             'time' => $this->time,
             'price' => $this->price,
             'venue_config' => $this->venue_config,
+            'zones' => $this->whenLoaded('zones'),
             'event' => new EventResource($this->whenLoaded('event')),
         ];
     }

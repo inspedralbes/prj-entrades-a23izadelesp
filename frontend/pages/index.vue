@@ -4,9 +4,8 @@ import { watch } from 'vue'
 
 const eventsStore = useEventsStore()
 
-// Cargar eventos en SSR y cliente
 const { data: eventsData, pending, error } = await useFetch('/api/events', {
-  baseURL: process.server ? 'http://nginx' : 'http://localhost:8080'
+  key: 'events-home'
 })
 
 // Poblar el store con los datos

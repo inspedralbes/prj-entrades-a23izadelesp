@@ -1,101 +1,99 @@
 <?php
 
-use App\Models\Event;
 use App\Models\AppSession;
-use App\Models\Seat;
 use App\Models\Booking;
+use App\Models\Event;
 use Illuminate\Support\Facades\Redis;
-use function Pest\Faker\fake;
 
 beforeEach(function () {
-    $this->event = Event::factory()->create();
-    $this->session = AppSession::factory()->create(['event_id' => $this->event->id]);
-    $this->seat = Seat::factory()->create(['session_id' => $this->session->id]);
+    $this->event = Event::factory()->create(['type' => 'movie']);
+    $this->session = AppSession::factory()->create([
+        'event_id' => $this->event->id,
+        'price' => 10,
+        'venue_config' => [
+            'type' => 'grid',
+            'rows' => 1,
+            'cols' => 3,
+            'layout' => [[1, 1, 1]],
+        ],
+    ]);
 });
 
-it('purchase queue processes sequentially without duplicates', function () {
+it('creates independent bookings for different locked seats', function () {
     $sessionId = $this->session->id;
-    $seatId = $this->seat->id;
-    $bookingCount = 10;
-    
-    for ($i = 1; $i <= $bookingCount; $i++) {
-        Redis::set("seat_lock:{$sessionId}:{$seatId}:{$i}", $i, 'EX', 300);
-        
+
+    $bookingIds = [];
+    for ($col = 0; $col < 3; $col++) {
+        $identifier = "user_{$col}";
+        Redis::setex("seat:lock:{$sessionId}:0:{$col}", 300, $identifier);
+
         $this->postJson('/api/bookings', [
             'session_id' => $sessionId,
+            'identifier' => $identifier,
             'seats' => [
-                ['seat_id' => $seatId, 'price' => 10],
+                ['row' => 0, 'col' => $col],
             ],
-            'guest_email' => "user{$i}@example.com",
-        ]);
+            'guest_email' => "user{$col}@example.com",
+        ])->assertStatus(201)->assertJsonStructure(['data' => ['id', 'status', 'total']]);
+
+        $bookingIds[] = Booking::query()->latest('id')->value('id');
     }
-    
-    $queue = Redis::lrange('purchase:queue', 0, -1);
-    
-    expect(count($queue))->toBe($bookingCount);
-    
-    foreach ($queue as $bookingId) {
-        $isUnique = !Redis::sismember('processing_bookings', $bookingId);
-        expect($isUnique)->toBeTrue();
-    }
-    
-    Redis::del('purchase:queue');
+
+    expect($bookingIds)->toHaveCount(3);
+    expect(array_unique($bookingIds))->toHaveCount(3);
+    expect(Booking::query()->count())->toBe(3);
 });
 
 it('booking cannot be processed twice', function () {
     $sessionId = $this->session->id;
-    $seatId = $this->seat->id;
-    
-    Redis::set("seat_lock:{$sessionId}:{$seatId}", 1, 'EX', 300);
-    
+    $row = 0;
+    $col = 0;
+
+    Redis::setex("seat:lock:{$sessionId}:{$row}:{$col}", 300, 'user_1');
+
     $response = $this->postJson('/api/bookings', [
         'session_id' => $sessionId,
+        'identifier' => 'user_1',
         'seats' => [
-            ['seat_id' => $seatId, 'price' => 10],
+            ['row' => $row, 'col' => $col],
         ],
         'guest_email' => 'test@example.com',
     ]);
-    
+
+    $response->assertStatus(201);
     $bookingId = $response->json('data.id');
-    
+
     $booking1 = Booking::find($bookingId);
     expect($booking1)->not->toBeNull();
-    
+
     $response2 = $this->postJson('/api/bookings', [
         'session_id' => $sessionId,
+        'identifier' => 'user_2',
         'seats' => [
-            ['seat_id' => $seatId, 'price' => 10],
+            ['row' => $row, 'col' => $col],
         ],
         'guest_email' => 'test2@example.com',
     ]);
-    
+
     expect($response2->status())->toBe(422);
-    
-    Redis::del("seat_lock:{$sessionId}:{$seatId}");
 });
 
-it('failed payment releases seat lock', function () {
+it('rejects booking when seat is not locked by requester', function () {
     $sessionId = $this->session->id;
-    $seatId = $this->seat->id;
-    
-    Redis::set("seat_lock:{$sessionId}:{$seatId}", 1, 'EX', 300);
-    
+    $row = 0;
+    $col = 1;
+
+    Redis::setex("seat:lock:{$sessionId}:{$row}:{$col}", 300, 'owner_user');
+
     $response = $this->postJson('/api/bookings', [
         'session_id' => $sessionId,
+        'identifier' => 'another_user',
         'seats' => [
-            ['seat_id' => $seatId, 'price' => 10],
+            ['row' => $row, 'col' => $col],
         ],
         'guest_email' => 'fail@example.com',
     ]);
-    
-    $bookingId = $response->json('data.id');
-    
-    sleep(6);
-    
-    $booking = Booking::find($bookingId);
-    
-    if ($booking && $booking->status === 'failed') {
-        $lockExists = Redis::exists("seat_lock:{$sessionId}:{$seatId}");
-        expect($lockExists)->toBe(0);
-    }
+
+    $response->assertStatus(422)
+        ->assertJsonStructure(['error', 'unavailable_seats']);
 });

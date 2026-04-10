@@ -14,13 +14,18 @@ export default defineNuxtConfig({
       crawlLinks: false,
       routes: ['/']
     },
+    routeRules: {
+      '/api/**': {
+        proxy: 'http://nginx/api/**'
+      }
+    },
     headers: {
       'Cache-Control': 'public, max-age=0, must-revalidate'
     }
   },
   runtimeConfig: {
     public: {
-      apiBase: process.env.API_BASE_URL || 'http://localhost:8080/api',
+      apiBase: process.env.API_BASE_URL || '/api',
       socketUrl: process.env.SOCKET_URL || 'http://localhost:3001'
     }
   },

@@ -1,97 +1,84 @@
 <?php
 
-use App\Models\Event;
 use App\Models\AppSession;
-use App\Models\Seat;
+use App\Models\Event;
 use Illuminate\Support\Facades\Redis;
-use function Pest\Faker\fake;
 
 beforeEach(function () {
-    $this->event = Event::factory()->create();
-    $this->session = AppSession::factory()->create(['event_id' => $this->event->id]);
-    $this->seat = Seat::factory()->create(['session_id' => $this->session->id]);
+    $this->event = Event::factory()->create(['type' => 'movie']);
+    $this->session = AppSession::factory()->create([
+        'event_id' => $this->event->id,
+        'venue_config' => [
+            'type' => 'grid',
+            'rows' => 1,
+            'cols' => 2,
+            'layout' => [[1, 1]],
+        ],
+    ]);
 });
 
 it('only one request can lock the same seat', function () {
-    $seatId = $this->seat->id;
     $sessionId = $this->session->id;
-    
-    $promises = [];
-    for ($i = 0; $i < 100; $i++) {
-        $promises[] = async(fn () => $this->postJson("/api/sessions/{$sessionId}/seats/lock", [
-            'seat_id' => $seatId,
-            'user_id' => $i + 1,
-        ]));
-    }
-    
-    $responses = Promise\all($promises);
-    
-    $successCount = 0;
-    foreach ($responses as $response) {
-        if ($response->status() === 200) {
-            $successCount++;
-        }
-    }
-    
-    expect($successCount)->toBe(1);
-    
-    $lockKey = "seat_lock:{$sessionId}:{$seatId}";
-    Redis::del($lockKey);
+
+    $response1 = $this->postJson("/api/sessions/{$sessionId}/seats/lock", [
+        'row' => 0,
+        'col' => 0,
+        'identifier' => 'user_1',
+    ]);
+
+    $response2 = $this->postJson("/api/sessions/{$sessionId}/seats/lock", [
+        'row' => 0,
+        'col' => 0,
+        'identifier' => 'user_2',
+    ]);
+
+    $response1->assertStatus(200)->assertJson(['locked' => true]);
+    $response2->assertStatus(422);
+
+    expect(Redis::get("seat:lock:{$sessionId}:0:0"))->toBe('user_1');
 });
 
 it('seat lock expires and another user can lock', function () {
-    $seatId = $this->seat->id;
     $sessionId = $this->session->id;
-    $userId = 1;
-    
+
     $response = $this->postJson("/api/sessions/{$sessionId}/seats/lock", [
-        'seat_id' => $seatId,
-        'user_id' => $userId,
+        'row' => 0,
+        'col' => 0,
+        'identifier' => 'user_1',
     ]);
-    
+
     expect($response->status())->toBe(200);
-    
-    $lockKey = "seat_lock:{$sessionId}:{$seatId}";
+
+    $lockKey = "seat:lock:{$sessionId}:0:0";
     Redis::expire($lockKey, 1);
-    
+
     sleep(2);
-    
+
     $response2 = $this->postJson("/api/sessions/{$sessionId}/seats/lock", [
-        'seat_id' => $seatId,
-        'user_id' => 2,
+        'row' => 0,
+        'col' => 0,
+        'identifier' => 'user_2',
     ]);
-    
+
     expect($response2->status())->toBe(200);
-    
-    Redis::del($lockKey);
+    expect(Redis::get($lockKey))->toBe('user_2');
 });
 
-it('occupied seats never has duplicates', function () {
-    $seatId = $this->seat->id;
+it('same user can re-lock the same seat idempotently', function () {
     $sessionId = $this->session->id;
-    
+
     $this->postJson("/api/sessions/{$sessionId}/seats/lock", [
-        'seat_id' => $seatId,
-        'user_id' => 1,
+        'row' => 0,
+        'col' => 1,
+        'identifier' => 'same_user',
     ]);
-    
-    $booking = \App\Models\Booking::factory()->create([
-        'session_id' => $sessionId,
-        'status' => 'confirmed',
+
+    $response = $this->postJson("/api/sessions/{$sessionId}/seats/lock", [
+        'row' => 0,
+        'col' => 1,
+        'identifier' => 'same_user',
     ]);
-    
-    \App\Models\OccupiedSeat::create([
-        'booking_id' => $booking->id,
-        'session_id' => $sessionId,
-        'seat_id' => $seatId,
-    ]);
-    
-    $duplicate = \App\Models\OccupiedSeat::where('session_id', $sessionId)
-        ->where('seat_id', $seatId)
-        ->get();
-    
-    expect($duplicate->count())->toBe(1);
-    
-    $lockKey = "seat_lock:{$sessionId}:{$seatId}";
-    Redis::del($lockKey);
+
+    $response->assertStatus(200)->assertJson(['locked' => true]);
+    expect(Redis::get("seat:lock:{$sessionId}:0:1"))->toBe('same_user');
 });

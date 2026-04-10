@@ -11,110 +11,162 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Usuario de prueba
-        User::factory()->create([
+        User::updateOrCreate(['email' => 'test@queuely.com'], [
             'name' => 'Izan de la Cruz',
             'email' => 'test@queuely.com',
             'password' => bcrypt('password'),
             'email_verified_at' => now(),
         ]);
 
-        // Evento de Cine
-        $movie = Event::create([
-            'title' => 'Interstellar',
-            'description' => 'Un grupo de exploradores viaja a través de un agujero de gusano en el espacio.',
-            'type' => 'movie',
-            'image' => null,
-        ]);
+        Event::query()->delete();
 
-        // Sesiones de Cine (grid 10x15)
-        $gridLayout = [];
-        for ($r = 0; $r < 10; $r++) {
-            $row = [];
-            for ($c = 0; $c < 15; $c++) {
-                $row[] = ($c === 7) ? 0 : 1; // Pasillo en columna 7
+        $gridLayout = $this->buildGridLayout(12, 16, [7, 8]);
+
+        $this->createMovieEvent(
+            title: 'Interstellar',
+            description: 'En un futuro cercano marcado por la escasez de recursos y el colapso agrícola, un antiguo piloto de pruebas recibe una misión imposible: cruzar un agujero de gusano para encontrar un nuevo hogar para la humanidad. A medida que avanza la expedición, los límites entre ciencia, tiempo y memoria familiar se difuminan en una aventura emocional de gran escala. Interstellar combina exploración espacial, decisiones morales y un viaje íntimo sobre el amor, la pérdida y la esperanza.',
+            image: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564',
+            sessions: [
+                ['date' => '2026-05-10', 'time' => '18:00', 'price' => 9.90],
+                ['date' => '2026-05-10', 'time' => '21:30', 'price' => 11.50],
+                ['date' => '2026-05-11', 'time' => '20:00', 'price' => 10.50],
+            ],
+            gridLayout: $gridLayout,
+        );
+
+        $this->createMovieEvent(
+            title: 'Dune: Part Three',
+            description: 'La guerra por Arrakis entra en su fase decisiva. Paul Atreides debe equilibrar su destino político con las consecuencias personales de convertirse en símbolo de una revolución imparable. Entre alianzas frágiles, traiciones cortesanas y una lucha feroz por el control de la especia, la película expande su universo con batallas monumentales y un conflicto profundamente humano sobre liderazgo, fe y sacrificio.',
+            image: 'https://images.unsplash.com/photo-1477209472048-9d96fefb4e8f',
+            sessions: [
+                ['date' => '2026-05-12', 'time' => '19:00', 'price' => 10.00],
+                ['date' => '2026-05-12', 'time' => '22:15', 'price' => 11.80],
+                ['date' => '2026-05-13', 'time' => '18:30', 'price' => 9.80],
+            ],
+            gridLayout: $gridLayout,
+        );
+
+        $this->createMovieEvent(
+            title: 'La Ciudad de Cristal',
+            description: 'Un thriller de ciencia ficción ambientado en una metrópolis donde cada recuerdo puede comprarse, editarse o borrarse. Una inspectora de delitos neurodigitales investiga una serie de desapariciones vinculadas a una empresa que promete reescribir el pasado de sus clientes. Con una atmósfera noir futurista, la historia mezcla acción, misterio y dilemas éticos sobre identidad, verdad y libertad personal.',
+            image: 'https://images.unsplash.com/photo-1519608487953-e999c86e7455',
+            sessions: [
+                ['date' => '2026-05-14', 'time' => '17:45', 'price' => 8.90],
+                ['date' => '2026-05-14', 'time' => '20:30', 'price' => 10.40],
+                ['date' => '2026-05-15', 'time' => '22:00', 'price' => 10.90],
+            ],
+            gridLayout: $gridLayout,
+        );
+
+        $this->createConcertEvent(
+            title: 'Bad Bunny - Most Wanted Tour',
+            description: 'Una producción de gran formato con visuales inmersivos, banda en directo y un setlist que recorre sus mayores éxitos y colaboraciones más icónicas. El show fusiona trap, reggaetón y sonidos caribeños en una experiencia energética pensada para estadios. Luces, escenografía móvil y narrativa audiovisual convierten cada bloque en un viaje sonoro que mantiene la intensidad de principio a fin.',
+            image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a',
+            sessions: [
+                ['date' => '2026-06-02', 'time' => '21:30'],
+                ['date' => '2026-06-03', 'time' => '21:30'],
+            ],
+            zones: [
+                ['id' => 'pista', 'name' => 'Pista General', 'capacity' => 900, 'price' => 49.00, 'color' => '#10B981'],
+                ['id' => 'graderio', 'name' => 'Graderío', 'capacity' => 650, 'price' => 69.00, 'color' => '#F59E0B'],
+                ['id' => 'front_stage', 'name' => 'Front Stage', 'capacity' => 220, 'price' => 99.00, 'color' => '#6366F1'],
+                ['id' => 'vip', 'name' => 'VIP Experience', 'capacity' => 90, 'price' => 159.00, 'color' => '#EF4444'],
+            ],
+        );
+
+        $this->createConcertEvent(
+            title: 'Rosalía - Motomami World Tour',
+            description: 'Una puesta en escena vanguardista donde baile, percusión y electrónica se combinan con flamenco contemporáneo. El espectáculo alterna momentos íntimos con bloques de gran intensidad coreográfica, creando un ritmo narrativo que evoluciona durante toda la noche. Diseño de iluminación cinemático, arreglos en directo y dirección artística detallista elevan cada canción a una pieza escénica propia.',
+            image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819',
+            sessions: [
+                ['date' => '2026-06-10', 'time' => '22:00'],
+            ],
+            zones: [
+                ['id' => 'pista', 'name' => 'Pista', 'capacity' => 700, 'price' => 55.00, 'color' => '#10B981'],
+                ['id' => 'preferente', 'name' => 'Preferente', 'capacity' => 320, 'price' => 84.00, 'color' => '#F59E0B'],
+                ['id' => 'palco', 'name' => 'Palco', 'capacity' => 110, 'price' => 129.00, 'color' => '#8B5CF6'],
+                ['id' => 'vip', 'name' => 'VIP', 'capacity' => 60, 'price' => 179.00, 'color' => '#EF4444'],
+            ],
+        );
+
+        $this->createConcertEvent(
+            title: 'Arctic Lights Festival - Noche Headliners',
+            description: 'Un evento especial que reúne a varias bandas internacionales de indie y electrónica en un mismo cartel. Con dos escenarios sincronizados y cambios de set continuos, la noche ofrece un formato dinámico para disfrutar tanto de grandes himnos como de propuestas emergentes. Sonido envolvente, pantallas de gran formato y una dirección visual inspirada en auroras polares completan una experiencia festival premium.',
+            image: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea',
+            sessions: [
+                ['date' => '2026-06-21', 'time' => '20:30'],
+            ],
+            zones: [
+                ['id' => 'general', 'name' => 'General', 'capacity' => 1200, 'price' => 39.00, 'color' => '#10B981'],
+                ['id' => 'front', 'name' => 'Front Zone', 'capacity' => 260, 'price' => 72.00, 'color' => '#F59E0B'],
+                ['id' => 'lounge', 'name' => 'Lounge', 'capacity' => 140, 'price' => 115.00, 'color' => '#3B82F6'],
+                ['id' => 'vip', 'name' => 'VIP Backstage', 'capacity' => 45, 'price' => 210.00, 'color' => '#EF4444'],
+            ],
+        );
+    }
+
+    private function buildGridLayout(int $rows, int $cols, array $aisleColumns = []): array
+    {
+        $layout = [];
+
+        for ($row = 0; $row < $rows; $row++) {
+            $rowLayout = [];
+
+            for ($col = 0; $col < $cols; $col++) {
+                $rowLayout[] = in_array($col, $aisleColumns, true) ? 0 : 1;
             }
-            $gridLayout[] = $row;
+
+            $layout[] = $rowLayout;
         }
 
-        AppSession::create([
-            'event_id' => $movie->id,
-            'date' => '2026-04-01',
-            'time' => '18:00',
-            'price' => 9.50,
-            'venue_config' => ['type' => 'grid', 'rows' => 10, 'cols' => 15, 'layout' => $gridLayout],
-        ]);
+        return $layout;
+    }
 
-        AppSession::create([
-            'event_id' => $movie->id,
-            'date' => '2026-04-01',
-            'time' => '21:00',
-            'price' => 11.00,
-            'venue_config' => ['type' => 'grid', 'rows' => 10, 'cols' => 15, 'layout' => $gridLayout],
-        ]);
-
-        // Evento de Concierto
-        $concert = Event::create([
-            'title' => 'Bad Bunny - Most Wanted Tour',
-            'description' => 'El artista más escuchado del mundo en una noche inolvidable.',
-            'type' => 'concert',
-            'image' => null,
-        ]);
-
-        // Sesiones de Concierto (zonas)
-        AppSession::create([
-            'event_id' => $concert->id,
-            'date' => '2026-04-15',
-            'time' => '21:30',
-            'price' => null,
-            'venue_config' => [
-                'type' => 'zones',
-                'zones' => [
-                    ['id' => 'pista', 'name' => 'Pista', 'capacity' => 500, 'price' => 45.00, 'color' => '#10B981'],
-                    ['id' => 'grada_izq', 'name' => 'Grada Izquierda', 'capacity' => 200, 'price' => 60.00, 'color' => '#F59E0B'],
-                    ['id' => 'grada_der', 'name' => 'Grada Derecha', 'capacity' => 200, 'price' => 60.00, 'color' => '#F59E0B'],
-                    ['id' => 'vip', 'name' => 'VIP', 'capacity' => 50, 'price' => 120.00, 'color' => '#EF4444'],
-                ],
-            ],
-        ]);
-
-        // Segundo evento de cine
-        $movie2 = Event::create([
-            'title' => 'Dune: Part Three',
-            'description' => 'La épica conclusión de la saga de Frank Herbert.',
+    private function createMovieEvent(string $title, string $description, ?string $image, array $sessions, array $gridLayout): void
+    {
+        $event = Event::create([
+            'title' => $title,
+            'description' => $description,
             'type' => 'movie',
-            'image' => null,
+            'image' => $image,
         ]);
 
-        AppSession::create([
-            'event_id' => $movie2->id,
-            'date' => '2026-04-02',
-            'time' => '19:30',
-            'price' => 10.00,
-            'venue_config' => ['type' => 'grid', 'rows' => 10, 'cols' => 15, 'layout' => $gridLayout],
-        ]);
-
-        // Segundo evento de concierto
-        $concert2 = Event::create([
-            'title' => 'Rosalma - Motomami World Tour',
-            'description' => 'La artista española que conquistó el mundo.',
-            'type' => 'concert',
-            'image' => null,
-        ]);
-
-        AppSession::create([
-            'event_id' => $concert2->id,
-            'date' => '2026-04-20',
-            'time' => '22:00',
-            'price' => null,
-            'venue_config' => [
-                'type' => 'zones',
-                'zones' => [
-                    ['id' => 'pista', 'name' => 'Pista', 'capacity' => 400, 'price' => 55.00, 'color' => '#10B981'],
-                    ['id' => 'preferente', 'name' => 'Preferente', 'capacity' => 150, 'price' => 80.00, 'color' => '#F59E0B'],
-                    ['id' => 'vip', 'name' => 'VIP', 'capacity' => 30, 'price' => 150.00, 'color' => '#EF4444'],
+        foreach ($sessions as $session) {
+            AppSession::create([
+                'event_id' => $event->id,
+                'date' => $session['date'],
+                'time' => $session['time'],
+                'price' => $session['price'],
+                'venue_config' => [
+                    'type' => 'grid',
+                    'rows' => count($gridLayout),
+                    'cols' => count($gridLayout[0]),
+                    'layout' => $gridLayout,
                 ],
-            ],
+            ]);
+        }
+    }
+
+    private function createConcertEvent(string $title, string $description, ?string $image, array $sessions, array $zones): void
+    {
+        $event = Event::create([
+            'title' => $title,
+            'description' => $description,
+            'type' => 'concert',
+            'image' => $image,
         ]);
+
+        foreach ($sessions as $session) {
+            AppSession::create([
+                'event_id' => $event->id,
+                'date' => $session['date'],
+                'time' => $session['time'],
+                'price' => null,
+                'venue_config' => [
+                    'type' => 'zones',
+                    'zones' => $zones,
+                ],
+            ]);
+        }
     }
 }

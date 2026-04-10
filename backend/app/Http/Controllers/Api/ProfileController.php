@@ -14,7 +14,7 @@ class ProfileController extends Controller
         $user = Auth::user();
         
         $bookings = Booking::where('user_id', $user->id)
-            ->with(['event', 'session', 'tickets'])
+            ->with(['session.event', 'tickets'])
             ->orderBy('created_at', 'desc')
             ->get();
         
@@ -22,10 +22,10 @@ class ProfileController extends Controller
             'data' => $bookings->map(fn ($booking) => [
                 'id' => $booking->id,
                 'event' => [
-                    'id' => $booking->event->id,
-                    'title' => $booking->event->title,
-                    'image' => $booking->event->image,
-                    'venue' => $booking->event->venue,
+                    'id' => $booking->session->event->id,
+                    'title' => $booking->session->event->title,
+                    'image' => $booking->session->event->image,
+                    'venue' => $booking->session->event->venue,
                 ],
                 'session' => [
                     'id' => $booking->session->id,
@@ -48,7 +48,7 @@ class ProfileController extends Controller
             return response()->json(['error' => 'No autorizado'], 403);
         }
         
-        $booking->load(['event', 'session', 'tickets', 'tickets.zone']);
+        $booking->load(['session.event', 'tickets', 'tickets.zone']);
         
         return response()->json([
             'data' => [
@@ -56,10 +56,10 @@ class ProfileController extends Controller
                 'status' => $booking->status,
                 'total' => $booking->total,
                 'event' => [
-                    'id' => $booking->event->id,
-                    'title' => $booking->event->title,
-                    'image' => $booking->event->image,
-                    'venue' => $booking->event->venue,
+                    'id' => $booking->session->event->id,
+                    'title' => $booking->session->event->title,
+                    'image' => $booking->session->event->image,
+                    'venue' => $booking->session->event->venue,
                 ],
                 'session' => [
                     'id' => $booking->session->id,

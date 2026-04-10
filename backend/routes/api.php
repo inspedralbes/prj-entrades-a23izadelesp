@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\QueueController;
 use App\Http\Controllers\Api\SeatController;
 use App\Http\Controllers\Api\SessionController;
+use App\Http\Controllers\Api\VenueTemplateController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,7 @@ Route::get('/events/{event}', [EventController::class, 'show']);
 // Sessions
 Route::get('/sessions/{session}', [SessionController::class, 'show']);
 Route::get('/sessions/{session}/seats', [SessionController::class, 'seats']);
+Route::get('/sessions/{session}/zones/{zone}/seats', [SessionController::class, 'zoneSeatsDetail']);
 
 // Seat Lock (cine - grid)
 Route::post('/sessions/{session}/seats/lock', [SeatController::class, 'lockSeat']);
@@ -55,6 +57,16 @@ Route::delete('/sessions/{session}/seats/unlock', [SeatController::class, 'unloc
 // Zone Lock (concierto - zones)
 Route::post('/sessions/{session}/zones/lock', [SeatController::class, 'lockZone']);
 Route::delete('/sessions/{session}/zones/unlock', [SeatController::class, 'unlockZone']);
+Route::post('/sessions/{session}/zones/{zone}/seats/lock', [SeatController::class, 'lockZoneSeat']);
+Route::delete('/sessions/{session}/zones/{zone}/seats/unlock', [SeatController::class, 'unlockZoneSeat']);
+
+// Venue templates (concert layout CRUD)
+Route::get('/venue-templates', [VenueTemplateController::class, 'index']);
+Route::post('/venue-templates', [VenueTemplateController::class, 'store']);
+Route::get('/venue-templates/{venueTemplate}', [VenueTemplateController::class, 'show']);
+Route::put('/venue-templates/{venueTemplate}', [VenueTemplateController::class, 'update']);
+Route::delete('/venue-templates/{venueTemplate}', [VenueTemplateController::class, 'destroy']);
+Route::post('/venue-templates/{venueTemplate}/sessions/{session}/apply', [VenueTemplateController::class, 'applyToSession']);
 
 // Queue (sala de espera)
 Route::post('/sessions/{session}/queue/join', [QueueController::class, 'join']);
