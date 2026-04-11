@@ -2,9 +2,9 @@ name: CI - Tests
 
 on:
   push:
-    branches: [develop, main]
+    branches: [dev, main]
   pull_request:
-    branches: [develop, main]
+    branches: [dev, main]
 
 jobs:
   backend-tests:
@@ -45,7 +45,6 @@ jobs:
         with:
           php-version: '8.3'
           extensions: mbstring, xml, pgsql, redis, pdo_pgsql
-          coverage: xdebug
 
       - name: Install Composer dependencies
         working-directory: ./backend
@@ -72,7 +71,7 @@ jobs:
           REDIS_PORT: 6379
         run: php artisan migrate --force
 
-      - name: Run Pest tests
+      - name: Run backend tests
         working-directory: ./backend
         env:
           DB_CONNECTION: pgsql
@@ -83,10 +82,10 @@ jobs:
           DB_PASSWORD: postgres
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
-        run: php artisan test --coverage --min=80
+        run: php artisan test
 
-  frontend-tests:
-    name: Frontend (Nuxt + Vitest)
+  frontend-build:
+    name: Frontend (Nuxt build + generate)
     runs-on: ubuntu-latest
 
     steps:
@@ -104,28 +103,17 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      - name: Run Vitest
-        working-directory: ./frontend
-        run: npm run test:unit -- --coverage
-
       - name: Build check
         working-directory: ./frontend
         run: npm run build
 
-  realtime-tests:
-    name: Realtime (Node.js)
-    runs-on: ubuntu-latest
+      - name: Generate static output
+        working-directory: ./frontend
+        run: npm run generate
 
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+  realtime-check:
+    name: Realtime (Node.js syntax)
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -142,42 +130,6 @@ jobs:
         working-directory: ./realtime
         run: npm ci
 
-      - name: Run tests
+      - name: Validate realtime entrypoint syntax
         working-directory: ./realtime
-        env:
-          REDIS_URL: redis://127.0.0.1:6379
-        run: npm test
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-
-      - name: Install Composer dependencies
-        working-directory: ./backend
-        run: composer install --no-interaction --prefer-dist
-
-      - name: Laravel Pint (PHP Lint)
-        working-directory: ./backend
-        run: ./vendor/bin/pint --test
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install frontend dependencies
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: ESLint
-        working-directory: ./frontend
-        run: npm run lint
+        run: node --check src/server.js

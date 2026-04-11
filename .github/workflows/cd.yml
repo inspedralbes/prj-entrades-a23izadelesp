@@ -3,74 +3,32 @@ name: CD - Deploy
 on:
   push:
     branches: [main]
-    tags: ['v*']
+  workflow_dispatch:
 
 jobs:
-  build:
-    name: Build Docker Images
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Backend (Laravel)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/queuely-backend:${{ github.sha }}
-            ${{ secrets.DOCKER_USERNAME }}/queuely-backend:latest
-
-      - name: Build and push Realtime (Socket.IO)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./realtime
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/queuely-realtime:${{ github.sha }}
-            ${{ secrets.DOCKER_USERNAME }}/queuely-realtime:latest
-
-      - name: Build and push Frontend (Nuxt)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/queuely-frontend:${{ github.sha }}
-            ${{ secrets.DOCKER_USERNAME }}/queuely-frontend:latest
-
   deploy:
-    name: Deploy to Server
+    name: Deploy production stack
     runs-on: ubuntu-latest
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+      - name: Deploy on server via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script_stop: true
           script: |
-            cd /opt/queuely
+            set -e
+            cd ${{ secrets.SERVER_APP_PATH }}
+
             git pull origin main
-            docker-compose pull
-            docker-compose up -d --build
-            docker-compose exec -T backend php artisan migrate --force
-            docker-compose exec -T backend php artisan queue:restart
+
+            docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+
+            docker compose -f docker-compose.prod.yml --env-file .env exec -T laravel php artisan migrate --force
+            docker compose -f docker-compose.prod.yml --env-file .env exec -T laravel php artisan config:cache
+            docker compose -f docker-compose.prod.yml --env-file .env exec -T laravel php artisan route:cache
+            docker compose -f docker-compose.prod.yml --env-file .env exec -T laravel php artisan view:cache
+            docker compose -f docker-compose.prod.yml --env-file .env exec -T laravel php artisan queue:restart
