@@ -9,6 +9,15 @@ const { post, loading, error } = useApi()
 const name = ref('')
 const slug = ref('')
 const description = ref('')
+const templateType = ref<'movie' | 'concert'>('concert')
+
+const movieLayoutJson = ref(`[
+  [1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1],
+  [1,1,1,0,0,1,1,1],
+  [1,1,1,1,1,1,1,1]
+]`)
+
 const zonesJson = ref(`[
   {
     "key": "pista",
@@ -31,21 +40,57 @@ const zonesJson = ref(`[
   }
 ]`)
 
+function parseMovieLayout() {
+  const layout = JSON.parse(movieLayoutJson.value)
+
+  if (!Array.isArray(layout) || layout.length === 0) {
+    throw new Error('La matriu de cine ha de tenir almenys una fila')
+  }
+
+  const width = Array.isArray(layout[0]) ? layout[0].length : 0
+  if (width === 0) {
+    throw new Error('La matriu de cine ha de tenir almenys una columna')
+  }
+
+  for (const row of layout) {
+    if (!Array.isArray(row) || row.length !== width) {
+      throw new Error('Totes les files de la matriu han de tenir la mateixa longitud')
+    }
+
+    for (const cell of row) {
+      if (cell !== 0 && cell !== 1) {
+        throw new Error('La matriu només pot contenir valors 0 o 1')
+      }
+    }
+  }
+
+  return layout
+}
+
 async function saveTemplate() {
   try {
-    const zones = JSON.parse(zonesJson.value)
-    const res = await post('/venue-templates', {
+    const payload: any = {
       name: name.value,
       slug: slug.value || undefined,
       description: description.value || undefined,
-      zones,
-    })
+      template_type: templateType.value,
+    }
+
+    if (templateType.value === 'movie') {
+      payload.metadata = {
+        layout: parseMovieLayout(),
+      }
+    } else {
+      payload.zones = JSON.parse(zonesJson.value)
+    }
+
+    const res = await post('/venue-templates', payload)
 
     if ((res as any)?.data?.id) {
       await router.push('/admin/templates')
     }
-  } catch {
-    alert('JSON de zones no vàlid')
+  } catch (exception: any) {
+    alert(exception?.message || 'Dades de plantilla no vàlides')
   }
 }
 </script>
@@ -64,8 +109,23 @@ async function saveTemplate() {
       <label class="block text-sm font-semibold">Descripció</label>
       <textarea v-model="description" class="input-brutal w-full min-h-[80px]" />
 
-      <label class="block text-sm font-semibold">Zones (JSON)</label>
-      <textarea v-model="zonesJson" class="input-brutal w-full min-h-[300px] font-mono text-xs" />
+      <label class="block text-sm font-semibold">Tipus de plantilla</label>
+      <select v-model="templateType" class="input-brutal w-full">
+        <option value="concert">Concert</option>
+        <option value="movie">Cine</option>
+      </select>
+
+      <div v-if="templateType === 'movie'" class="space-y-2">
+        <label class="block text-sm font-semibold">Matriu de seients (JSON)</label>
+        <p class="text-xs text-gray-600">Usa 1 per seient i 0 per passadís/espai buit.</p>
+        <textarea v-model="movieLayoutJson" class="input-brutal w-full min-h-[220px] font-mono text-xs" />
+      </div>
+
+      <div v-else class="space-y-2">
+        <label class="block text-sm font-semibold">Zones (JSON)</label>
+        <p class="text-xs text-gray-600">Per zones `seated`, defineix `seat_layout.layout` amb matriu 0/1.</p>
+        <textarea v-model="zonesJson" class="input-brutal w-full min-h-[300px] font-mono text-xs" />
+      </div>
 
       <p v-if="error" class="border-2 border-accent bg-white p-3 text-accent">{{ error }}</p>
 

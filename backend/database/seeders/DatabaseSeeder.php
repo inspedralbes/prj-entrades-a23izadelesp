@@ -3,7 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\AppSession;
+use App\Models\Booking;
 use App\Models\Event;
+use App\Models\OccupiedSeat;
+use App\Models\OccupiedZone;
+use App\Models\OccupiedZoneSeat;
+use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -11,13 +16,36 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(['email' => 'test@queuely.com'], [
-            'name' => 'Izan de la Cruz',
-            'email' => 'test@queuely.com',
-            'password' => bcrypt('password'),
-            'email_verified_at' => now(),
-        ]);
+        $testUsers = [
+            [
+                'name' => 'Izan de la Cruz',
+                'email' => 'test@queuely.com',
+                'password' => bcrypt('password'),
+            ],
+            [
+                'name' => 'Marta Soler',
+                'email' => 'marta@queuely.com',
+                'password' => bcrypt('password'),
+            ],
+        ];
 
+        foreach ($testUsers as $user) {
+            User::updateOrCreate(
+                ['email' => $user['email']],
+                [
+                    'name' => $user['name'],
+                    'email' => $user['email'],
+                    'password' => $user['password'],
+                    'email_verified_at' => now(),
+                ]
+            );
+        }
+
+        OccupiedZoneSeat::query()->delete();
+        OccupiedZone::query()->delete();
+        OccupiedSeat::query()->delete();
+        Ticket::query()->delete();
+        Booking::query()->delete();
         Event::query()->delete();
 
         $gridLayout = $this->buildGridLayout(12, 16, [7, 8]);

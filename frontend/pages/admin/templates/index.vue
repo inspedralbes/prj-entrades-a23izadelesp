@@ -39,7 +39,11 @@ onMounted(loadTemplates)
           <div>
             <h2 class="text-lg font-bold">{{ tpl.name }}</h2>
             <p class="text-sm text-gray-600">{{ tpl.slug }}</p>
-            <p class="mt-1 text-sm">Zones: {{ tpl.zones?.length || 0 }}</p>
+            <p class="mt-1 text-sm">Tipus: {{ tpl.template_type === 'movie' ? 'Cine' : 'Concert' }}</p>
+            <p v-if="tpl.template_type === 'movie'" class="mt-1 text-sm">
+              Matriu: {{ tpl.metadata?.layout?.length || 0 }}x{{ tpl.metadata?.layout?.[0]?.length || 0 }}
+            </p>
+            <p v-else class="mt-1 text-sm">Zones: {{ tpl.zones?.length || 0 }}</p>
           </div>
           <div class="flex gap-2">
             <NuxtLink :to="`/admin/templates/${tpl.id}`" class="btn-brutal-secondary px-3 py-2 text-xs">Editar</NuxtLink>
