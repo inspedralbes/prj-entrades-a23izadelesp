@@ -59,7 +59,7 @@ class QueueService
         for ($i = 0; $i < $batchSize; $i++) {
             $identifier = Redis::lpop("queue:{$sessionId}");
 
-            if ($identifier === null) {
+            if ($identifier === null || $identifier === false) {
                 break;
             }
 
