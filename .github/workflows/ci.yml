@@ -50,9 +50,25 @@ jobs:
         working-directory: ./backend
         run: composer install --no-interaction --prefer-dist
 
-      - name: Copy .env.testing
+      - name: Prepare .env for CI
         working-directory: ./backend
-        run: cp .env.testing .env
+        run: |
+          cp .env.example .env
+          {
+            echo "APP_ENV=testing"
+            echo "APP_DEBUG=true"
+            echo "DB_CONNECTION=pgsql"
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=5432"
+            echo "DB_DATABASE=queuely_test"
+            echo "DB_USERNAME=postgres"
+            echo "DB_PASSWORD=postgres"
+            echo "REDIS_HOST=127.0.0.1"
+            echo "REDIS_PORT=6379"
+            echo "SESSION_DRIVER=array"
+            echo "CACHE_STORE=array"
+            echo "QUEUE_CONNECTION=redis"
+          } >> .env
 
       - name: Generate application key
         working-directory: ./backend
