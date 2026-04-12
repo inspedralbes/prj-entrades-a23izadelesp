@@ -1,43 +1,60 @@
 # QueueLy
 
-Plataforma de reserva de entradas de alto rendimiento para cine y conciertos.
+Plataforma de venta y reserva de entradas para cine y conciertos, preparada para escenarios de alta concurrencia.
 
-## Descripción
+## Resumen ejecutivo
 
-QueueLy es un sistema de reservas que maneja eventos de alta demanda mediante:
-- Sistema de doble cola FIFO (sala de espera + cola de compra)
-- Comunicación en tiempo real con Socket.IO
-- Soft locking de asientos/zonas en Redis
-- Autenticación con Sanctum + Google OAuth
-- Guest checkout (compra sin registro)
+QueueLy implementa un flujo de compra robusto basado en:
+
+- Cola FIFO de admisión para controlar picos de tráfico.
+- Soft-locks en Redis para evitar sobreventa.
+- Eventos en tiempo real con Socket.IO para feedback instantáneo.
+- Procesamiento asíncrono de compra y confirmación de tickets.
 
 ## Stack
 
-- **Backend**: Laravel 11 (PHP 8.3) + PostgreSQL + Redis
-- **Frontend**: Nuxt 3 + Tailwind CSS (Neo-Brutalism)
+- **Backend**: Laravel + PostgreSQL + Redis
+- **Frontend**: Nuxt 3 + Pinia + Tailwind
 - **Realtime**: Node.js + Socket.IO
-- **Infraestructura**: Docker + Docker Compose
+- **Infraestructura**: Docker Compose + Nginx + Let's Encrypt
+- **CI/CD**: GitHub Actions
 
-## Servicios
-
-| Servicio | Puerto |
-|----------|--------|
-| Frontend (Nuxt) | 3000 |
-| API (Laravel) | 8080 |
-| Socket.IO | 3001 |
-| PostgreSQL | 5432 |
-| Redis | 6379 |
-| Mailpit | 8025 |
-
-## Levantar el proyecto
+## Arranque rápido (desarrollo)
 
 ```bash
 docker compose up -d
-cd backend && composer install && php artisan migrate --seed
-cd ../realtime && npm install
-cd ../frontend && npm install && npm run dev
+
+cd backend
+composer install
+php artisan migrate --seed
+
+cd ../realtime
+npm install
+
+cd ../frontend
+npm install
+npm run dev
 ```
 
-## Estado
+## Producción (resumen)
 
-En desarrollo activo - Fase de implementación del MVP.
+```bash
+cd /opt/queuely
+git pull --ff-only origin main
+docker compose -p queuely -f docker-compose.prod.yml --env-file .env up -d --build --remove-orphans
+docker compose -p queuely -f docker-compose.prod.yml --env-file .env exec -T laravel php artisan migrate --force
+```
+
+## Documentación completa
+
+La documentación técnica exhaustiva está en `doc/`:
+
+- **Índice principal**: [`doc/README.md`](./doc/README.md)
+- **Parte más importante (colas + realtime)**: [`doc/05-queues-realtime.md`](./doc/05-queues-realtime.md)
+- **Backend y API**: [`doc/03-backend-api.md`](./doc/03-backend-api.md)
+- **Infra y deploy**: [`doc/08-infra-deploy.md`](./doc/08-infra-deploy.md)
+- **CI/CD**: [`doc/09-ci-cd.md`](./doc/09-ci-cd.md)
+
+## Estado del proyecto
+
+MVP funcional con despliegue productivo, flujo de compra, cola y sincronización en tiempo real.
