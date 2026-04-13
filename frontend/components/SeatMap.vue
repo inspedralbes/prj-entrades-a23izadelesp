@@ -11,8 +11,26 @@ const props = defineProps<{
 const seatsStore = useSeatsStore()
 const { connect, emit, on, off, disconnect } = useSocket()
 
+function getIdentifier() {
+  const token = localStorage.getItem('auth-token')
+
+  if (token) {
+    return `user_${token.split('|')[0]}`
+  }
+
+  let guestIdentifier = localStorage.getItem('guest-identifier')
+
+  if (!guestIdentifier) {
+    guestIdentifier = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    localStorage.setItem('guest-identifier', guestIdentifier)
+  }
+
+  return guestIdentifier
+}
+
 onMounted(async () => {
   await seatsStore.fetchSeats(props.sessionId)
+  const identifier = getIdentifier()
   
   const config = useRuntimeConfig()
   connect(config.public.socketUrl)
@@ -20,7 +38,8 @@ onMounted(async () => {
   
   on('seat:locked', (data: any) => {
     if (data.session_id === props.sessionId) {
-      seatsStore.updateSeatStatusByGrid(data.row, data.col, 'blocked')
+      const status = data.identifier === identifier ? 'selected' : 'blocked'
+      seatsStore.updateSeatStatusByGrid(data.row, data.col, status)
     }
   })
   

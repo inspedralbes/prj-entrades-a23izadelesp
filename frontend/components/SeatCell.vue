@@ -21,12 +21,14 @@ const isSelected = computed(() => {
 })
 
 function handleClick() {
-  if (props.status === 'occupied' || props.status === 'blocked') return
   if (isSelected.value) {
     emit('deselect', props.id)
-  } else {
-    emit('select', props.id, props.row, props.number, props.price)
+    return
   }
+
+  if (props.status === 'occupied' || props.status === 'blocked') return
+
+  emit('select', props.id, props.row, props.number, props.price)
 }
 
 const statusClasses = computed(() => {

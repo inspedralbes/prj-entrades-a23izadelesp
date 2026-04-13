@@ -55,6 +55,7 @@ services:
     environment:
       - SOCKET_PORT=3001
       - REDIS_URL=redis://redis:6379
+      - REDIS_PREFIX=queuely-database-
 
   frontend:
     build:

@@ -8,6 +8,7 @@ export function useQueue(sessionId: number, eventId: number) {
   const isAdmitted = ref(false)
   const isProcessing = ref(true)
   const queueLength = ref(0)
+  const pollingHandle = ref<ReturnType<typeof setInterval> | null>(null)
   
   const { connected, emit, on, off, connect, disconnect } = useSocket()
   const sessionStore = useSessionStore()
@@ -32,16 +33,20 @@ export function useQueue(sessionId: number, eventId: number) {
   function init() {
     const config = useRuntimeConfig()
     connect(config.public.socketUrl)
-    emit('join:session', sessionId)
-
     const identifier = getIdentifier()
 
-    useApi().get(`/sessions/${sessionId}/queue/position?identifier=${encodeURIComponent(identifier)}`).then((res: any) => {
+    emit('join:session', sessionId)
+    emit('register:queue', { session_id: sessionId, identifier })
+
+    const refreshPosition = async () => {
+      const res: any = await useApi().get(`/sessions/${sessionId}/queue/position?identifier=${encodeURIComponent(identifier)}`)
+
       if (res && res.active) {
         isAdmitted.value = true
         isProcessing.value = false
         position.value = 0
         sessionStore.setPosition(0)
+        return
       } else if (res && res.position > 0) {
         position.value = res.position
         isProcessing.value = true
@@ -50,7 +55,17 @@ export function useQueue(sessionId: number, eventId: number) {
         position.value = null
         isProcessing.value = false
       }
-    }).catch(console.error)
+    }
+
+    refreshPosition().catch(console.error)
+
+    if (!pollingHandle.value) {
+      pollingHandle.value = setInterval(() => {
+        if (!isAdmitted.value) {
+          refreshPosition().catch(console.error)
+        }
+      }, 3000)
+    }
 
     on('queue:position', (data: any) => {
       if (data.session_id === sessionId && data.identifier === identifier) {
@@ -88,6 +103,12 @@ export function useQueue(sessionId: number, eventId: number) {
     off('queue:position')
     off('queue:admitted')
     off('queue:remaining')
+
+    if (pollingHandle.value) {
+      clearInterval(pollingHandle.value)
+      pollingHandle.value = null
+    }
+
     disconnect()
   }
 

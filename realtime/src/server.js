@@ -6,6 +6,7 @@ const QueueManager = require('./queueManager');
 
 const PORT = process.env.SOCKET_PORT || 3001;
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_PREFIX = process.env.REDIS_PREFIX || '';
 
 const httpServer = createServer();
 const io = new Server(httpServer, {
@@ -15,7 +16,8 @@ const io = new Server(httpServer, {
   }
 });
 
-const redis = new Redis(REDIS_URL, { keyPrefix: 'queuely-database-' });
+const redisOptions = REDIS_PREFIX ? { keyPrefix: REDIS_PREFIX } : {};
+const redis = new Redis(REDIS_URL, redisOptions);
 const redisSubscriber = new RedisSubscriber(io);
 const queueManager = new QueueManager(io, redis);
 

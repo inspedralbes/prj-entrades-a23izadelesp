@@ -10,6 +10,7 @@ use App\Models\OccupiedZoneSeat;
 use App\Models\OccupiedSeat;
 use App\Models\OccupiedZone;
 use App\Models\Zone;
+use App\Services\SeatLockService;
 use App\Services\ZoneLockService;
 use App\Services\ZoneSeatLockService;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +19,7 @@ use Illuminate\Http\Request;
 class SessionController
 {
     public function __construct(
+        private SeatLockService $seatLockService,
         private ZoneLockService $zoneLockService,
         private ZoneSeatLockService $zoneSeatLockService,
     ) {}
@@ -108,10 +110,11 @@ class SessionController
                     $rowData[] = null;
                 } else {
                     $key = "{$row}:{$col}";
+                    $locked = $this->seatLockService->isSeatLocked($session->id, $row, $col);
                     $rowData[] = [
                         'row' => $row,
                         'col' => $col,
-                        'status' => $occupied->has($key) ? 'occupied' : 'free',
+                        'status' => $occupied->has($key) ? 'occupied' : ($locked ? 'blocked' : 'free'),
                     ];
                 }
             }
