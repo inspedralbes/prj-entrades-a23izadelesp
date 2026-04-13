@@ -17,11 +17,26 @@ class SeatLockService
 
         $current = Redis::get($key);
 
-        if ($current !== null && $current !== $identifier) {
+        if ($current === $identifier) {
+            Redis::expire($key, $ttl);
+            Redis::hset("seat:locks:{$sessionId}", "{$row}:{$col}", $identifier);
+
+            Redis::publish('seat:locked', json_encode([
+                'session_id' => $sessionId,
+                'row' => $row,
+                'col' => $col,
+                'identifier' => $identifier,
+            ]));
+
+            return true;
+        }
+
+        $acquired = Redis::set($key, $identifier, 'EX', $ttl, 'NX');
+
+        if ($acquired === null || $acquired === false) {
             return false;
         }
 
-        Redis::setex($key, $ttl, $identifier);
         Redis::hset("seat:locks:{$sessionId}", "{$row}:{$col}", $identifier);
 
         Redis::publish('seat:locked', json_encode([

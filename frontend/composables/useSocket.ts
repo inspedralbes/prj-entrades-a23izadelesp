@@ -34,9 +34,9 @@ export function useSocket() {
     return socket
   }
 
-  function emit(event: string, data: unknown) {
+  function emit(event: string, ...args: unknown[]) {
     if (socket) {
-      socket.emit(event, data)
+      socket.emit(event, ...args)
     }
   }
 

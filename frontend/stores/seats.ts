@@ -139,6 +139,30 @@ export const useSeatsStore = defineStore('seats', () => {
     }
   }
 
+  async function releaseAllSelectedSeats(keepalive = false) {
+    if (!sessionId.value || selectedSeats.value.length === 0) return
+
+    const config = useRuntimeConfig()
+    const identifier = localStorage.getItem('auth-token')
+      ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}`
+      : localStorage.getItem('guest-identifier')
+
+    if (!identifier) return
+
+    const seatsToRelease = [...selectedSeats.value]
+
+    await Promise.allSettled(
+      seatsToRelease.map((seat) =>
+        fetch(`${config.public.apiBase}/sessions/${sessionId.value}/seats/unlock`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ row: seat.apiRow, col: seat.apiCol, identifier }),
+          keepalive
+        })
+      )
+    )
+  }
+
   function updateSeatStatus(seatId: number, status: Seat['status']) {
     const seat = seats.value.find(s => s.id === seatId)
     if (seat) seat.status = status
@@ -155,6 +179,6 @@ export const useSeatsStore = defineStore('seats', () => {
 
   return {
     seats, selectedSeats, loading, error, sessionId,
-    totalPrice, fetchSeats, lockSeat, unlockSeat, updateSeatStatus, updateSeatStatusByGrid, clearSelection
+    totalPrice, fetchSeats, lockSeat, unlockSeat, releaseAllSelectedSeats, updateSeatStatus, updateSeatStatusByGrid, clearSelection
   }
 })

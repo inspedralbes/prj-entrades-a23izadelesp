@@ -10,6 +10,20 @@ const props = defineProps<{
 
 const seatsStore = useSeatsStore()
 const { connect, emit, on, off, disconnect } = useSocket()
+let joinRetryHandle: ReturnType<typeof setInterval> | null = null
+
+function joinSession() {
+  emit('join:session', props.sessionId, (response: any) => {
+    if (response?.ok && joinRetryHandle) {
+      clearInterval(joinRetryHandle)
+      joinRetryHandle = null
+    }
+  })
+}
+
+function handlePageExit() {
+  seatsStore.releaseAllSelectedSeats(true)
+}
 
 function getIdentifier() {
   const token = localStorage.getItem('auth-token')
@@ -34,7 +48,17 @@ onMounted(async () => {
   
   const config = useRuntimeConfig()
   connect(config.public.socketUrl)
-  emit('join:session', props.sessionId)
+  joinSession()
+
+  if (!joinRetryHandle) {
+    joinRetryHandle = setInterval(() => {
+      joinSession()
+    }, 1500)
+  }
+
+  on('connect', joinSession)
+  window.addEventListener('beforeunload', handlePageExit)
+  window.addEventListener('pagehide', handlePageExit)
   
   on('seat:locked', (data: any) => {
     if (data.session_id === props.sessionId) {
@@ -51,16 +75,27 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  if (joinRetryHandle) {
+    clearInterval(joinRetryHandle)
+    joinRetryHandle = null
+  }
+
+  window.removeEventListener('beforeunload', handlePageExit)
+  window.removeEventListener('pagehide', handlePageExit)
+
+  off('connect', joinSession)
   off('seat:locked')
   off('seat:released')
   disconnect()
 })
 
 function handleSelect(seatId: number, row: string, number: number, price: number) {
+  if (props.readonly) return
   seatsStore.lockSeat(seatId, row, number, price)
 }
 
 function handleDeselect(seatId: number) {
+  if (props.readonly) return
   seatsStore.unlockSeat(seatId)
 }
 

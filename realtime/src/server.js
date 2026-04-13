@@ -24,19 +24,27 @@ const queueManager = new QueueManager(io, redis);
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
 
-  socket.on('join:session', async (sessionId) => {
+  socket.on('join:session', async (sessionId, callback) => {
     socket.join(`session:${sessionId}`);
     console.log(`Socket ${socket.id} joined session:${sessionId}`);
     
     await redis.sadd('active_sessions', sessionId);
+
+    if (typeof callback === 'function') {
+      callback({ ok: true, session_id: sessionId });
+    }
   });
 
-  socket.on('register:queue', async (data) => {
+  socket.on('register:queue', async (data, callback) => {
     const { session_id, identifier } = data;
     socket.data = { session_id, identifier };
     socket.join(`session:${session_id}`);
     await redis.sadd('active_sessions', session_id);
     console.log(`Socket ${socket.id} registered for queue ${session_id} as ${identifier}`);
+
+    if (typeof callback === 'function') {
+      callback({ ok: true, session_id });
+    }
   });
 
   socket.on('disconnect', async () => {
