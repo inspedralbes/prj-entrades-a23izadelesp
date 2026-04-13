@@ -1,6 +1,8 @@
 const Redis = require('ioredis');
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_PREFIX = process.env.REDIS_PREFIX || '';
+const LEGACY_PREFIX = 'queuely-database-';
 
 class RedisSubscriber {
   constructor(io) {
@@ -10,28 +12,26 @@ class RedisSubscriber {
   }
 
   setupListeners() {
-    const channels = [
-      'queuely-database-seat:locked',
+    const baseChannels = [
       'seat:locked',
-      'queuely-database-seat:released',
       'seat:released',
-      'queuely-database-zone:locked',
       'zone:locked',
-      'queuely-database-zone:released',
       'zone:released',
-      'queuely-database-zone-seat:locked',
       'zone-seat:locked',
-      'queuely-database-zone-seat:released',
       'zone-seat:released',
-      'queuely-database-queue:updated',
       'queue:updated',
-      'queuely-database-booking:processing',
       'booking:processing',
-      'queuely-database-booking:confirmed',
       'booking:confirmed',
-      'queuely-database-booking:failed',
       'booking:failed'
     ];
+
+    const prefixedChannels = REDIS_PREFIX
+      ? baseChannels.map(channel => `${REDIS_PREFIX}${channel}`)
+      : [];
+
+    const legacyChannels = baseChannels.map(channel => `${LEGACY_PREFIX}${channel}`);
+
+    const channels = [...new Set([...baseChannels, ...prefixedChannels, ...legacyChannels])];
 
     channels.forEach(channel => {
       this.subscriber.subscribe(channel, (err) => {
@@ -53,7 +53,9 @@ class RedisSubscriber {
       const data = JSON.parse(message);
       console.log(`Received from ${channel}:`, data);
 
-      const normalizedChannel = channel.replace('queuely-database-', '');
+      const normalizedChannel = channel
+        .replace(LEGACY_PREFIX, '')
+        .replace(REDIS_PREFIX, '');
 
       switch (normalizedChannel) {
         case 'seat:locked':

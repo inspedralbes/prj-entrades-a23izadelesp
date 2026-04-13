@@ -59,7 +59,12 @@ export const useSeatsStore = defineStore('seats', () => {
               number: rowSeatNumber,
               apiRow: rowIndex,
               apiCol: colIndex,
-              status: cell.status === 'occupied' ? 'occupied' : 'available',
+              status:
+                cell.status === 'occupied'
+                  ? 'occupied'
+                  : cell.status === 'blocked'
+                    ? 'blocked'
+                    : 'available',
               price: 10
             })
           })

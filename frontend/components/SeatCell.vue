@@ -45,7 +45,7 @@ const statusClasses = computed(() => {
   <button
     class="flex h-8 w-8 items-center justify-center border-2 text-xs font-semibold transition-all sm:h-10 sm:w-10 sm:text-sm"
     :class="statusClasses"
-    :disabled="status === 'occupied' || status === 'blocked'"
+    :disabled="status === 'occupied' || (status === 'blocked' && !isSelected)"
     @click="handleClick"
   >
     {{ number }}
