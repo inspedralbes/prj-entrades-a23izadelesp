@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useSessionStore } from '~/stores/session'
 import { useQueue } from '~/composables/useQueue'
+import { useClientIdentifier } from '~/composables/useClientIdentifier'
 
 const route = useRoute()
 const router = useRouter()
@@ -9,7 +10,6 @@ const sessionId = parseInt(route.params.sessionId as string)
 
 const sessionStore = useSessionStore()
 const { position, isAdmitted, isProcessing, connected, init, cleanup } = useQueue(sessionId, eventId)
-const { connect, emit } = useSocket()
 const { post } = useApi()
 
 const isJoiningQueue = ref(false)
@@ -35,20 +35,10 @@ onUnmounted(() => {
 })
 
 async function joinQueue() {
-  const config = useRuntimeConfig()
-  
-  const identifier = localStorage.getItem('auth-token') 
-    ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}` 
-    : localStorage.getItem('guest-identifier') || `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-  
-  if (!localStorage.getItem('auth-token')) {
-    localStorage.setItem('guest-identifier', identifier)
-  }
+  const { getIdentifier } = useClientIdentifier()
+  const identifier = getIdentifier()
 
   isJoiningQueue.value = true
-
-  connect(config.public.socketUrl)
-  emit('register:queue', { session_id: sessionId, identifier })
 
   try {
       const res: any = await post(`/sessions/${sessionId}/queue/join`, { identifier })

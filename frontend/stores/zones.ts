@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useApi } from '../composables/useApi'
+import { useClientIdentifier } from '~/composables/useClientIdentifier'
 
 export interface Zone {
   id: number
@@ -262,17 +263,7 @@ export const useZonesStore = defineStore('zones', () => {
   }
 
   function getIdentifier() {
-    const token = localStorage.getItem('auth-token')
-    if (token) {
-      return `user_${token.split('|')[0]}`
-    }
-
-    let guestIdentifier = localStorage.getItem('guest-identifier')
-    if (!guestIdentifier) {
-      guestIdentifier = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-      localStorage.setItem('guest-identifier', guestIdentifier)
-    }
-    return guestIdentifier
+    return useClientIdentifier().getIdentifier()
   }
 
   function clearSelection() {

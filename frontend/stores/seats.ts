@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useClientIdentifier } from '~/composables/useClientIdentifier'
 
 export interface Seat {
   id: number
@@ -84,12 +85,8 @@ export const useSeatsStore = defineStore('seats', () => {
   async function lockSeat(seatId: number, row: string, number: number, price: number) {
     if (!sessionId.value) return
     const config = useRuntimeConfig()
-    const identifier = localStorage.getItem('auth-token') 
-        ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}` 
-        : localStorage.getItem('guest-identifier') || `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-    
-    // Guardar el identifier si somos guest
-    if (!localStorage.getItem('auth-token')) localStorage.setItem('guest-identifier', identifier)
+    const { getIdentifier } = useClientIdentifier()
+    const identifier = getIdentifier()
 
     const seat = seats.value.find(s => s.id === seatId)
     if (!seat) return
@@ -119,10 +116,8 @@ export const useSeatsStore = defineStore('seats', () => {
   async function unlockSeat(seatId: number) {
     if (!sessionId.value) return
     const config = useRuntimeConfig()
-    
-    const identifier = localStorage.getItem('auth-token') 
-        ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}` 
-        : localStorage.getItem('guest-identifier')
+    const { getIdentifier } = useClientIdentifier()
+    const identifier = getIdentifier()
 
     try {
       const seat = selectedSeats.value.find(s => s.seatId === seatId)
@@ -143,9 +138,8 @@ export const useSeatsStore = defineStore('seats', () => {
     if (!sessionId.value || selectedSeats.value.length === 0) return
 
     const config = useRuntimeConfig()
-    const identifier = localStorage.getItem('auth-token')
-      ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}`
-      : localStorage.getItem('guest-identifier')
+    const { getIdentifier } = useClientIdentifier()
+    const identifier = getIdentifier()
 
     if (!identifier) return
 

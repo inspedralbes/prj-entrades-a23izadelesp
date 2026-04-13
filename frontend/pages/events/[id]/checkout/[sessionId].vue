@@ -5,6 +5,7 @@ import { useSeatsStore } from '../../../../stores/seats'
 import { useZonesStore } from '../../../../stores/zones'
 import { useSessionStore } from '../../../../stores/session'
 import { useApi } from '../../../../composables/useApi'
+import { useClientIdentifier } from '../../../../composables/useClientIdentifier'
 
 const router = useRouter()
 const route = useRoute()
@@ -94,16 +95,10 @@ async function handleCheckout() {
 
     const payload: any = {
       session_id: sessionId,
-      identifier: localStorage.getItem('auth-token')
-        ? `user_${localStorage.getItem('auth-token')?.split('|')[0]}`
-        : localStorage.getItem('guest-identifier') || `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      identifier: useClientIdentifier().getIdentifier(),
       seats,
       zones,
       zone_seats: zoneSeats
-    }
-
-    if (!localStorage.getItem('auth-token')) {
-      localStorage.setItem('guest-identifier', payload.identifier)
     }
 
     if (!isLoggedIn.value) {

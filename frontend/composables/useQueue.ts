@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { useSocket } from '~/composables/useSocket'
 import { useSessionStore } from '~/stores/session'
 import { useApi } from '~/composables/useApi'
+import { useClientIdentifier } from '~/composables/useClientIdentifier'
 
 export function useQueue(sessionId: number, eventId: number) {
   const position = ref<number | null>(null)
@@ -13,26 +14,10 @@ export function useQueue(sessionId: number, eventId: number) {
   const { connected, emit, on, off, connect, disconnect } = useSocket()
   const sessionStore = useSessionStore()
 
-  function getIdentifier() {
-    const token = localStorage.getItem('auth-token')
-
-    if (token) {
-      return `user_${token.split('|')[0]}`
-    }
-
-    let guestIdentifier = localStorage.getItem('guest-identifier')
-
-    if (!guestIdentifier) {
-      guestIdentifier = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-      localStorage.setItem('guest-identifier', guestIdentifier)
-    }
-
-    return guestIdentifier
-  }
-
   function init() {
     const config = useRuntimeConfig()
     connect(config.public.socketUrl)
+    const { getIdentifier } = useClientIdentifier()
     const identifier = getIdentifier()
 
     emit('join:session', sessionId)
