@@ -9,7 +9,7 @@ const eventId = parseInt(route.params.id as string)
 const sessionId = parseInt(route.params.sessionId as string)
 
 const sessionStore = useSessionStore()
-const { position, isAdmitted, isProcessing, connected, init, cleanup } = useQueue(sessionId, eventId)
+const { position, isAdmitted, isProcessing, connected, init, registerQueueSocket, cleanup } = useQueue(sessionId, eventId)
 const { post } = useApi()
 
 const isJoiningQueue = ref(false)
@@ -39,6 +39,7 @@ async function joinQueue() {
   const identifier = getIdentifier()
 
   isJoiningQueue.value = true
+  registerQueueSocket()
 
   try {
       const res: any = await post(`/sessions/${sessionId}/queue/join`, { identifier })

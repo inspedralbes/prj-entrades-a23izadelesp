@@ -58,6 +58,7 @@ class QueueManager {
   async removeByIdentifier(sessionId, identifier) {
     const queueKey = `queue:${sessionId}`;
     const removedCount = await this.redis.lrem(queueKey, 0, identifier);
+    await this.redis.srem(`queue:${sessionId}:active`, identifier);
     await this.redis.del(`queue:position:${sessionId}:${identifier}`);
     
     if (removedCount > 0) {

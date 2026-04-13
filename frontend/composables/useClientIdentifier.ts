@@ -9,10 +9,6 @@ export function useClientIdentifier() {
     let guestIdentifier = sessionStorage.getItem('guest-identifier')
 
     if (!guestIdentifier) {
-      guestIdentifier = localStorage.getItem('guest-identifier')
-    }
-
-    if (!guestIdentifier) {
       guestIdentifier = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
     }
 

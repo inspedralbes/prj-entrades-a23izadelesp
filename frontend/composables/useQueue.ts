@@ -13,18 +13,18 @@ export function useQueue(sessionId: number, eventId: number) {
   
   const { connected, emit, on, off, connect, disconnect } = useSocket()
   const sessionStore = useSessionStore()
+  const identifier = ref<string>('')
 
   function init() {
     const config = useRuntimeConfig()
     connect(config.public.socketUrl)
     const { getIdentifier } = useClientIdentifier()
-    const identifier = getIdentifier()
+    identifier.value = getIdentifier()
 
     emit('join:session', sessionId)
-    emit('register:queue', { session_id: sessionId, identifier })
 
     const refreshPosition = async () => {
-      const res: any = await useApi().get(`/sessions/${sessionId}/queue/position?identifier=${encodeURIComponent(identifier)}`)
+      const res: any = await useApi().get(`/sessions/${sessionId}/queue/position?identifier=${encodeURIComponent(identifier.value)}`)
 
       if (res && res.active) {
         isAdmitted.value = true
@@ -53,7 +53,7 @@ export function useQueue(sessionId: number, eventId: number) {
     }
 
     on('queue:position', (data: any) => {
-      if (data.session_id === sessionId && data.identifier === identifier) {
+      if (data.session_id === sessionId && data.identifier === identifier.value) {
         if (data.admitted || data.status === 'admitted' || data.position === 0) {
           isAdmitted.value = true
           isProcessing.value = false
@@ -69,7 +69,7 @@ export function useQueue(sessionId: number, eventId: number) {
     })
 
     on('queue:admitted', (data: any) => {
-      if (data.session_id === sessionId && data.identifier === identifier) {
+      if (data.session_id === sessionId && data.identifier === identifier.value) {
         isAdmitted.value = true
         isProcessing.value = false
         position.value = 0
@@ -82,6 +82,15 @@ export function useQueue(sessionId: number, eventId: number) {
         queueLength.value = data.count
       }
     })
+  }
+
+  function registerQueueSocket() {
+    if (!identifier.value) {
+      const { getIdentifier } = useClientIdentifier()
+      identifier.value = getIdentifier()
+    }
+
+    emit('register:queue', { session_id: sessionId, identifier: identifier.value })
   }
 
   function cleanup() {
@@ -114,6 +123,7 @@ export function useQueue(sessionId: number, eventId: number) {
     queueLength,
     connected,
     init,
+    registerQueueSocket,
     cleanup,
     getTimeEstimate
   }
