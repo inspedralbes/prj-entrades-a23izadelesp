@@ -8,19 +8,27 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run"
   },
   "dependencies": {
+    "@headlessui/vue": "^1.7.23",
     "@pinia/nuxt": "^0.5.1",
+    "chart.js": "^4.5.1",
     "nuxt": "^3.11.0",
     "pinia": "^2.1.7",
     "socket.io-client": "^4.7.0",
     "vue": "^3.4.0",
+    "vue-chartjs": "^5.3.3",
     "vue-router": "^4.3.0"
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.12.0",
-    "cypress": "^13.6.0"
+    "@vue/test-utils": "^2.4.6",
+    "cypress": "^13.6.0",
+    "jsdom": "^29.0.2",
+    "vitest": "^4.1.4"
   }
 }

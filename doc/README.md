@@ -13,6 +13,13 @@ Aquesta carpeta conté la documentació tècnica exhaustiva del projecte, amb na
 7. [Model de dades](./07-data-model.md)
 8. [Infraestructura i desplegament](./08-infra-deploy.md)
 9. [CI/CD (GitHub Actions)](./09-ci-cd.md)
+10. [IA — OpenSpec i traçabilitat](./ia/spec.md)
+
+## Documentació IA
+
+- [OpenSpec (`spec.md`)](./ia/spec.md)
+- [Pla (`plan.md`)](./ia/plan.md)
+- [Traçabilitat de prompts i decisions](./ia/traceability.md)
 
 ## Ordre de lectura recomanat
 

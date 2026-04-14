@@ -1,16 +1,34 @@
 <script setup lang="ts">
 import { useProfileStore } from '~/stores/profile'
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 
 const profileStore = useProfileStore()
+const selectedStatus = ref('all')
+
+const statusOptions = [
+  { value: 'all', label: 'Todos los estados' },
+  { value: 'confirmed', label: 'Confirmadas' },
+  { value: 'pending', label: 'Pendientes' },
+  { value: 'failed', label: 'Fallidas' }
+]
 
 onMounted(() => {
   profileStore.fetchTickets()
+})
+
+const filteredTickets = computed(() => {
+  if (selectedStatus.value === 'all') return profileStore.tickets
+  return profileStore.tickets.filter(ticket => ticket.status === selectedStatus.value)
 })
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('ca-ES', {
     day: 'numeric', month: 'short', year: 'numeric'
   })
+}
+
+function statusLabel(status: string) {
+  return statusOptions.find(option => option.value === status)?.label || status
 }
 </script>
 
@@ -36,8 +54,31 @@ function formatDate(dateStr: string) {
       </div>
 
       <div v-else class="space-y-4">
+        <div class="card-brutal bg-white p-4 sm:p-5">
+          <div class="mb-2 text-sm font-semibold">Filtrar por estado</div>
+          <Listbox v-model="selectedStatus">
+            <div class="relative max-w-sm">
+              <ListboxButton class="input-brutal w-full text-left">
+                {{ statusLabel(selectedStatus) }}
+              </ListboxButton>
+              <ListboxOptions class="absolute z-10 mt-2 max-h-56 w-full overflow-auto border-2 border-black bg-white shadow-brutal">
+                <ListboxOption
+                  v-for="option in statusOptions"
+                  :key="option.value"
+                  :value="option.value"
+                  class="cursor-pointer px-3 py-2 hover:bg-gray-100"
+                >
+                  {{ option.label }}
+                </ListboxOption>
+              </ListboxOptions>
+            </div>
+          </Listbox>
+        </div>
+
+        <TicketsStatusChart :tickets="filteredTickets" />
+
         <TicketCard
-          v-for="ticket in profileStore.tickets"
+          v-for="ticket in filteredTickets"
           :key="ticket.id"
           :id="ticket.id"
           :event-title="ticket.event.title"
