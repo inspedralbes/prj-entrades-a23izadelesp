@@ -1,0 +1,123 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./backend:/var/www/backend
+    depends_on:
+      - laravel
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - queuely
+
+  laravel:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/var/www/backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - queuely
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=queuely
+      - DB_USERNAME=bentouser
+      - DB_PASSWORD=bentopass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE_CONNECTION=redis
+      - MAIL_MAILER=smtp
+      - MAIL_HOST=mailpit
+      - MAIL_PORT=1025
+
+  node-socket:
+    build:
+      context: ./realtime
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./realtime:/app
+    depends_on:
+      - redis
+    networks:
+      - queuely
+    environment:
+      - SOCKET_PORT=3001
+      - REDIS_URL=redis://redis:6379
+      - REDIS_PREFIX=queuely-database-
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - laravel
+      - node-socket
+    networks:
+      - queuely
+    environment:
+      - NODE_ENV=development
+
+  postgres:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=queuely
+      - POSTGRES_USER=bentouser
+      - POSTGRES_PASSWORD=bentopass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - queuely
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bentouser -d queuely"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - queuely
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - queuely
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  queuely:
+    driver: bridge

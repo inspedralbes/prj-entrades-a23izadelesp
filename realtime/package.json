@@ -1,0 +1,14 @@
+{
+  "name": "queuely-realtime",
+  "version": "1.0.0",
+  "description": "QueueLy Socket.IO Realtime Server",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.0",
+    "ioredis": "^5.3.0"
+  }
+}

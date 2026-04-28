@@ -1,19 +1,34 @@
-# Documentació
-Llistat d'alguns dels punts que han de quedar explicats en aquesta carpeta. Poden ser tots en aquest fitxer o en diversos fitxers enllaçats.
+# QueueLy — Documentació tècnica
 
-És obligatori modificar aquest document!!
+Aquesta carpeta conté la documentació tècnica exhaustiva del projecte, amb navegació entre fitxers Markdown.
 
-## Documentació bàsica MÍNIMA
- * Objectius
- * Arquitectura bàsica
-   * Tecnologies utilitzades
-   * Interrelació entre els diversos components
- * Com crees l'entorn de desenvolupament
- * Com desplegues l'aplicació a producció
- * Llistat d'endpoints de l'API de backend (també podeu documentar-ho amb swagger)
-    * Rutes
-   * Exemples de JSON de peticó
-   * Exemples de JSON de resposta i els seus codis d'estat 200? 404?
- * Aplicació Android
- * Altres elements importants.
- * ...
+## Índex
+
+1. [Visió general](./01-overview.md)
+2. [Arquitectura del sistema](./02-architecture.md)
+3. [Backend i API](./03-backend-api.md)
+4. [Serveis de domini (locks, pagaments, QR)](./04-services-domain.md)
+5. [Cues i temps real (nucli del projecte)](./05-queues-realtime.md)
+6. [Frontend i flux d'usuari](./06-frontend-flow.md)
+7. [Model de dades](./07-data-model.md)
+8. [Infraestructura i desplegament](./08-infra-deploy.md)
+9. [CI/CD (GitHub Actions)](./09-ci-cd.md)
+10. [IA — OpenSpec i traçabilitat](./ia/spec.md)
+
+## Documentació IA
+
+- [OpenSpec (`spec.md`)](./ia/spec.md)
+- [Pla (`plan.md`)](./ia/plan.md)
+- [Traçabilitat de prompts i decisions](./ia/traceability.md)
+
+## Ordre de lectura recomanat
+
+- **Per entendre el projecte ràpid**: `01 -> 02 -> 05`.
+- **Per treballar a backend**: `03 -> 04 -> 07`.
+- **Per treballar en operació i deploy**: `08 -> 09`.
+
+## Focus del projecte
+
+El component més important és la coordinació de **cua + locks + temps real** per evitar sobreventa i oferir feedback instantani durant alta concurrència.
+
+Document clau: [05-queues-realtime.md](./05-queues-realtime.md).

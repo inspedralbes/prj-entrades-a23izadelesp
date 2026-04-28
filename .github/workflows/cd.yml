@@ -1,0 +1,34 @@
+name: CD - Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy production stack
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy on server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd ${{ secrets.SERVER_APP_PATH }}
+
+            git pull origin main
+
+            docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+
+            docker compose -f docker-compose.prod.yml --env-file .env exec -T laravel php artisan migrate --force
+            docker compose -f docker-compose.prod.yml --env-file .env exec -T laravel php artisan config:cache
+            docker compose -f docker-compose.prod.yml --env-file .env exec -T laravel php artisan route:cache
+            docker compose -f docker-compose.prod.yml --env-file .env exec -T laravel php artisan view:cache
+            docker compose -f docker-compose.prod.yml --env-file .env exec -T laravel php artisan queue:restart

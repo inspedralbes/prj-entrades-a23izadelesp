@@ -1,0 +1,113 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile.prod
+      args:
+        API_BASE_URL: ${API_BASE_URL:-/api}
+        SOCKET_URL: ${SOCKET_URL:-https://queuely.daw.inspedralbes.cat}
+    container_name: queuely-web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    depends_on:
+      - laravel
+      - node-socket
+    restart: unless-stopped
+    networks:
+      - queuely
+
+  laravel:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: queuely-laravel
+    env_file:
+      - ./.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - queuely
+
+  laravel-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: queuely-laravel-worker
+    command: php artisan queue:work redis --sleep=1 --tries=3 --timeout=120
+    env_file:
+      - ./.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - queuely
+
+  node-socket:
+    build:
+      context: ./realtime
+      dockerfile: Dockerfile.prod
+    container_name: queuely-realtime
+    env_file:
+      - ./.env
+    environment:
+      - SOCKET_PORT=3001
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - REDIS_PREFIX=${REDIS_PREFIX:-queuely-database-}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - queuely
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: queuely-postgres
+    environment:
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - queuely
+
+  redis:
+    image: redis:7-alpine
+    container_name: queuely-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - queuely
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  queuely:
+    driver: bridge
